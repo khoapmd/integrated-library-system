@@ -1,0 +1,799 @@
+/* Main CSS file for Library Management System */
+
+:root {
+    --primary-color: #db011c;
+    --secondary-color: #a00115;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    --dark-color: #1a1a1a;
+    --light-color: #f8f9fa;
+    --background-color: #db011c;
+    --card-shadow: 0 8px 25px rgba(219, 1, 28, 0.15);
+    --hover-shadow: 0 15px 35px rgba(219, 1, 28, 0.25);
+    --text-primary: #db011c;
+}
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    color: var(--dark-color);
+}
+
+/* Black Banner */
+.black-banner {
+    background: #000000;
+    padding: 13px 0;
+    text-align: center;
+    position: relative;
+}
+
+.black-banner__link {
+    text-decoration: none;
+    color: white;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.black-banner__link:hover {
+    color: white;
+    text-decoration: none;
+}
+
+.black-banner__text {
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 14px;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    color: white;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0px 3px 6px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+.black-banner__text i {
+    transition: transform 0.3s ease;
+    font-size: 12px;
+}
+
+.black-banner__link:hover .black-banner__text i {
+    transform: translateX(3px);
+}
+
+@media (max-width: 768px) {
+    .black-banner__text {
+        font-size: 12px;
+    }
+}
+
+/* Navbar Styles */
+.navbar {
+    background: var(--background-color) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    margin-bottom: 0; /* Ensure no bottom margin for consistency */
+    padding: 0.75rem 0;
+}
+
+.navbar .container-fluid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.navbar-brand {
+    flex-shrink: 0;
+    display: flex !important;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: white !important;
+}
+
+.brand-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.brand-logo-row {
+    display: flex;
+    align-items: center;
+}
+
+.brand-text {
+    white-space: nowrap;
+    margin-left: 0.5rem;
+    font-size: 1.4rem;
+}
+
+.brand-text-mobile {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 0.2rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.navbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 0.75rem 1rem !important;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.nav-link i {
+    font-size: 0.9rem;
+    width: 16px;
+    text-align: center;
+}
+
+/* Global Container Consistency */
+/* Ensure consistent spacing for main content containers after header */
+.container.my-5 {
+    margin-top: 3rem !important;
+    margin-bottom: 3rem !important;
+}
+
+/* Ensure consistent header positioning across all pages */
+body {
+    padding-top: 0;
+}
+
+/* Override any page-specific container width modifications for consistency */
+.container {
+    /* Let Bootstrap handle responsive widths consistently */
+    width: auto !important;
+}
+
+/* Ensure proper spacing after the sticky navbar */
+body > .container.my-5:first-child,
+.hero-section + .container.my-5,
+.black-banner + .hero-section + .container.my-5 {
+    margin-top: 3rem !important;
+}
+
+/* Navbar Logo */
+.navbar-logo {
+    height: 64px;
+    width: auto;
+    object-fit: contain;
+    filter: brightness(1);
+    transition: all 0.3s ease;
+}
+
+.navbar-brand:hover .navbar-logo {
+    filter: brightness(1.1);
+    transform: scale(1.05);
+}
+
+/* Button Styles */
+.btn {
+    border-radius: 25px;
+    padding: 12px 30px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(219, 1, 28, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(219, 1, 28, 0.4);
+    background: #b8011a !important;
+    border-color: #b8011a !important;
+}
+
+.btn-success {
+    background: var(--success-color);
+    border: none;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+}
+
+.btn-warning {
+    background: var(--warning-color);
+    border: none;
+    color: var(--dark-color);
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+}
+
+.btn-outline-primary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.btn-outline-info {
+    border-color: var(--info-color);
+    color: var(--info-color);
+}
+
+.btn-outline-info:hover {
+    background: var(--info-color);
+    transform: translateY(-2px);
+}
+
+.btn-outline-warning {
+    border-color: var(--warning-color);
+    color: var(--warning-color);
+}
+
+.btn-outline-warning:hover {
+    background: var(--warning-color);
+    transform: translateY(-2px);
+}
+
+.btn-outline-danger {
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+    background: var(--danger-color);
+    transform: translateY(-2px);
+}
+
+.btn-outline-success {
+    border-color: var(--success-color);
+    color: var(--success-color);
+    border-width: 2px;
+}
+
+.btn-outline-success:hover {
+    background: var(--success-color);
+    transform: translateY(-2px);
+}
+
+/* Custom Red Button for Action Bar */
+.btn-primary-red {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white !important;
+}
+
+.btn-primary-red:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white !important;
+}
+
+.btn-primary-red:focus,
+.btn-primary-red.focus {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white !important;
+    box-shadow: 0 0 0 0.2rem rgba(219, 1, 28, 0.5);
+}
+
+.btn-primary-red:not(:disabled):not(.disabled):active,
+.btn-primary-red:not(:disabled):not(.disabled).active {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white !important;
+}
+
+.btn-primary-red i {
+    color: white !important;
+}
+
+/* Text color utilities - Override Bootstrap */
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.text-secondary {
+    color: var(--secondary-color) !important;
+}
+
+/* Feature card icons */
+.feature-card .text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* Bootstrap overrides */
+:root {
+    --bs-primary: #db011c;
+    --bs-primary-rgb: 219, 1, 28;
+}
+
+/* Form Styles */
+.form-control {
+    border: none;
+    padding: 12px 20px;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.2);
+    border-color: var(--primary-color);
+}
+
+.form-select {
+    border-radius: 25px;
+    border: none;
+    padding: 12px 20px;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.form-select:focus {
+    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.2);
+    border-color: var(--primary-color);
+}
+
+.input-group {
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: 15px;
+    border: none;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+    border-left: 4px solid var(--success-color);
+}
+
+.alert-info {
+    background: rgba(23, 162, 184, 0.1);
+    color: var(--info-color);
+    border-left: 4px solid var(--info-color);
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    border-left: 4px solid var(--warning-color);
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+    border-left: 4px solid var(--danger-color);
+}
+
+/* Modal Styles */
+.modal-content {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.modal-header {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 20px 20px 0 0;
+    padding: 1.5rem 2rem;
+}
+
+.modal-title {
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.5rem 2rem;
+}
+
+/* Status badges */
+.status-available { 
+    color: var(--success-color);
+    background: rgba(40, 167, 69, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.status-borrowed { 
+    color: var(--danger-color);
+    background: rgba(220, 53, 69, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.status-reserved { 
+    color: var(--warning-color);
+    background: rgba(255, 193, 7, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Badge Styles */
+.badge {
+    border-radius: 20px;
+    font-weight: 600;
+    padding: 6px 12px;
+}
+
+.bg-success {
+    background: var(--success-color) !important;
+}
+
+.bg-warning {
+    background: var(--warning-color) !important;
+}
+
+.bg-info {
+    background: var(--info-color) !important;
+}
+
+/* Pagination */
+.pagination .page-link {
+    border: none;
+    border-radius: 10px;
+    margin: 0 3px;
+    padding: 10px 15px;
+    color: var(--primary-color);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.pagination .page-link:hover, .pagination .page-item.active .page-link {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(219, 1, 28, 0.3);
+}
+
+/* Typography */
+h2 {
+    color: var(--dark-color);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.gradient-text {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+/* Loading spinners */
+.spinner-border, .fa-spin {
+    color: var(--primary-color) !important;
+}
+
+/* Footer */
+footer.footer {
+    background: #000000 !important;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+footer {
+    background: #000000 !important;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Camera preview */
+.camera-preview {
+    width: 100%;
+    max-width: 500px;
+    height: 300px;
+    border: 3px dashed var(--primary-color);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    margin: 20px auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.camera-preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 17px;
+    transform: scaleX(-1);
+}
+
+/* Fixed Bottom Action Bar - Global Styles */
+.fixed-bottom-actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    z-index: 1030;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn {
+    min-width: 160px;
+    border-radius: 25px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+}
+
+.action-btn i {
+    font-size: 1.1em;
+}
+
+/* Add bottom padding to body to prevent content overlap */
+body {
+    padding-bottom: 100px;
+}
+
+/* Action Bar Toggle Button */
+.action-bar-toggle {
+    position: fixed;
+    bottom: 85px;
+    right: 0;
+    z-index: 1031;
+    transition: all 0.3s ease;
+}
+
+.action-bar-toggle.hidden-bar {
+    bottom: 0;
+}
+
+.toggle-btn {
+    width: 20px;
+    height: 35px;
+    border-radius: 3px 0 0 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: -1px 0 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    border: none;
+    background: rgba(52, 58, 64, 0.8);
+    backdrop-filter: blur(2px);
+}
+
+.toggle-btn:hover {
+    background: rgba(73, 80, 87, 0.9);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
+    transform: translateX(-0.5px);
+}
+
+.toggle-btn:focus {
+    background: rgba(73, 80, 87, 0.9);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.25);
+    outline: none;
+}
+
+.toggle-btn i {
+    transition: all 0.2s ease;
+    font-size: 0.75em;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.toggle-btn:hover i {
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Delicate pulsing animation for toggle button */
+@keyframes delicatePulse {
+    0%, 100% { 
+        box-shadow: -1px 0 4px rgba(0, 0, 0, 0.1);
+    }
+    50% { 
+        box-shadow: -1px 0 6px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.toggle-btn {
+    animation: delicatePulse 3s ease-in-out infinite;
+}
+
+.toggle-btn:hover {
+    animation: none;
+}
+
+/* Action Bar Hide/Show Animation */
+.fixed-bottom-actions {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.fixed-bottom-actions.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Adjust body padding when action bar is hidden */
+body.action-bar-hidden {
+    padding-bottom: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .fixed-bottom-actions {
+        padding: 0.75rem 0;
+    }
+    
+    .action-btn {
+        min-width: 120px;
+        font-size: 0.9rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .fixed-bottom-actions .d-flex {
+        gap: 0.5rem !important;
+    }
+    
+    .action-bar-toggle {
+        bottom: 70px;
+        right: 0;
+    }
+    
+    .action-bar-toggle.hidden-bar {
+        bottom: 0;
+    }
+    
+    .toggle-btn {
+        width: 24px;
+        height: 40px;
+        border-radius: 3px 0 0 3px;
+    }
+    
+    .toggle-btn i {
+        font-size: 0.7em;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .navbar-nav {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .nav-link {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+/* Mobile-specific brand adjustments */
+@media (max-width: 575.98px) {
+    .navbar {
+        padding: 0.5rem 0;
+    }
+    
+    .container-fluid {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    .brand-container {
+        align-items: flex-start;
+    }
+    
+    .brand-text-mobile {
+        font-size: 0.75rem;
+        margin-top: 0.1rem;
+    }
+    
+    .navbar-logo {
+        height: 48px; /* Slightly smaller on mobile */
+    }
+}

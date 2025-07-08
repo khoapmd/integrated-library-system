@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Scanner - Library Management System{% endblock %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/scanner.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    {% set current_page = 'scanner' %}
+    {% include 'header.html' %}
+
+    <div class="container my-5">
+        <div class="scanner-container">
+            <h2 class="text-center mb-4 gradient-text">
+                <i class="fas fa-camera me-2"></i>
+                Smart Code Scanner
+            </h2>
+
+            <div class="text-center mb-4">
+                <p class="text-muted">Automatically detects and scans QR codes and ISBN barcodes</p>
+            </div>
+
+            <!-- Unified Scanner -->
+            <div class="scanner-section">
+                <div class="card scanner-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-magic me-2"></i>
+                            Universal Scanner
+                        </h5>
+                        <small class="text-muted">Automatically detects QR codes and ISBN barcodes</small>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="scanner-preview mb-3" id="unifiedCameraPreview">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-camera fa-3x"></i>
+                                <p class="mt-2">Scanner will appear here</p>
+                                <small>The scanner will automatically detect QR codes and ISBN barcodes</small>
+                            </div>
+                        </div>
+                        
+                        <div class="scanner-controls mb-3">
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <button id="toggleScannerBtn" class="btn btn-danger w-100" onclick="toggleScanner()">
+                                        <i class="fas fa-camera me-2"></i>Start Scanner
+                                    </button>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <button id="manualEntryBtn" class="btn btn-outline-danger w-100" onclick="handleManualEntry()">
+                                        <i class="fas fa-keyboard me-2"></i>Manual Entry
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="mb-2"><strong>Or upload an image:</strong></p>
+                            <input type="file" id="fileUpload" class="form-control" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="scanResults" class="scan-result"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- ZXing-js temporarily disabled due to API compatibility issues -->
+    <!-- <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script> -->
+    <script src="{{ url_for('static', filename='js/isbn-utils.js') }}?v=20250707-103000"></script>
+    <script src="{{ url_for('static', filename='js/id-pattern-utils.js') }}?v=20250707-103000"></script>
+    <script src="{{ url_for('static', filename='js/scanner-module.js') }}?v=20250707-103000"></script>
+    <script>
+        // Initialize UniversalScanner
+        let universalScanner = null;
+
+        // Initialize scanner on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Scanner page initialized with enhanced local ISBN detection');
+            
+            // Check IDPatternUtils availability
+            if (typeof IDPatternUtils !== 'undefined') {
+                console.log('✓ IDPatternUtils library is available for enhanced ID validation');
+                
+                // Test ID pattern validation
+                const testIds = [
+                    '9781234567890',
+                    '9783161484100',
+                    '878010000001',
+                    '12345678-1234-1234-1234-123456789012',
+                    '{"type":"library_book","uuid":"12345678-1234-1234-1234-123456789012"}'
+                ];
+                testIds.forEach(id => {
+                    const result = IDPatternUtils.parseId(id);
+                    console.log(`ID test: "${id}" -> Type: ${result.type}, Valid: ${result.isValid}`);
+                });
+            } else {
+                console.log('✗ IDPatternUtils library is NOT available');
+            }
+            
+            // Check ISBNUtils availability
+            if (typeof ISBNUtils !== 'undefined') {
+                console.log('✓ ISBNUtils library is available for enhanced validation');
+                
+                // Test ISBN validation
+                const testIsbns = ['9781234567890', '123456789X', '978-1-234-56789-0'];
+                testIsbns.forEach(isbn => {
+                    const result = ISBNUtils.extractIsbn(isbn);
+                    console.log(`ISBN test: "${isbn}" -> "${result}"`);
+                });
+            } else {
+                console.log('✗ ISBNUtils library is NOT available - using fallback validation');
+            }
+            
+            // Check BarcodeDetector API availability (our primary detection method)
+            if ('BarcodeDetector' in window) {
+                console.log('✓ BarcodeDetector API is available for local barcode detection');
+                
+                // Test supported formats
+                BarcodeDetector.getSupportedFormats().then(formats => {
+                    console.log('✓ Supported barcode formats:', formats);
+                }).catch(e => {
+                    console.log('⚠️ Could not get supported formats:', e);
+                });
+            } else {
+                console.log('❌ BarcodeDetector API is NOT available - limited detection capability');
+                console.log('💡 Consider using Chrome or Edge for better barcode detection');
+            }
+            
+            // Note: ZXing-js temporarily disabled due to API compatibility issues
+            console.log('⚠️ ZXing-js is temporarily disabled due to API compatibility issues');
+            console.log('💡 Using native BarcodeDetector API as primary detection method');
+            
+            // Initialize the universal scanner
+            universalScanner = new UniversalScanner({
+                scanInterval: 2000, // Faster scanning with local detection
+                autoStop: true,
+                showStatus: true,
+                onResults: handleScanResults,
+                onError: handleScanError
+            });
+
+            // Initialize scanner with DOM elements
+            universalScanner.init({
+                preview: 'unifiedCameraPreview',
+                toggleBtn: 'toggleScannerBtn',
+                uploadInput: 'fileUpload',
+                statusDiv: null,
+                resultsDiv: 'scanResults'
+            });
+
+            // Set up file upload
+            document.getElementById('fileUpload').addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    console.log('File uploaded, scanning locally...');
+                    universalScanner.scanImage(file, false);
+                }
+            });
+
+            // Scanner is ready
+        });
+
+        // Handle scan results
+        function handleScanResults(results, isAutomatic = false) {
+            console.log('Scan results:', results);
+            if (results && results.length > 0) {
+                displayResults(results);
+            } else if (!isAutomatic) {
+                document.getElementById('scanResults').innerHTML = 
+                    '<div class="alert alert-warning">No QR codes or ISBN barcodes found in the image.</div>';
+            }
+        }
+
+        // Handle scan errors
+        function handleScanError(message) {
+            console.error('Scan error:', message);
+            document.getElementById('scanResults').innerHTML = 
+                `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${message}</div>`;
+        }
+
+        // Display scan results
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('scanResults');
+            
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = '<div class="alert alert-warning">No results found.</div>';
+                return;
+            }
+
+            let html = '<div class="scan-results">';
+            
+            results.forEach(result => {
+                const typeClass = result.type === 'QR Code' ? 'primary' : 'success';
+                const typeIcon = result.type === 'QR Code' ? 'fas fa-qrcode' : 'fas fa-barcode';
+                
+                html += `
+                    <div class="result-section mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="${typeIcon} text-${typeClass} me-2"></i>
+                            <h5 class="mb-0">${result.type} Detected</h5>
+                            <span class="badge bg-${typeClass} ms-auto">${result.books.length} book(s) found</span>
+                        </div>
+                `;
+
+                if (result.books && result.books.length > 0) {
+                    result.books.forEach(book => {
+                        html += `
+                            <div class="book-result-card mb-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">${book.title}</h6>
+                                    <span class="badge bg-${typeClass}">
+                                        <i class="${typeIcon} me-1"></i>${result.type}
+                                    </span>
+                                </div>
+                                <p class="mb-1"><strong>Author:</strong> ${book.author}</p>
+                                <p class="mb-1"><strong>ISBN:</strong> ${book.isbn || 'Not available'}</p>
+                                ${book.publisher ? `<p class="mb-1"><strong>Publisher:</strong> ${book.publisher}</p>` : ''}
+                                ${book.language ? `<p class="mb-1"><strong>Language:</strong> ${book.language}</p>` : ''}
+                                ${book.description ? `
+                                    <div class="book-description mb-2">
+                                        <strong>Description:</strong>
+                                        <span class="description-text">
+                                            ${book.description.length > 200 ? 
+                                                `${book.description.substring(0, 200)}...
+                                                 <button class="btn btn-link btn-sm p-0 ms-1" onclick="toggleDescription(this, \`${book.description.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+                                                    <small>Show More</small>
+                                                 </button>` : 
+                                                book.description
+                                            }
+                                        </span>
+                                    </div>
+                                ` : ''}
+                                ${book.status ? `
+                                    <p class="mb-2"><strong>Status:</strong> 
+                                        <span class="badge bg-${book.status === 'available' ? 'success' : 'warning'}">
+                                            ${book.status}
+                                        </span>
+                                    </p>
+                                    <p class="mb-2"><strong>Available:</strong> ${book.copies_available}/${book.copies_total}</p>
+                                ` : ''}
+                                <div class="d-flex gap-2">
+                                    ${book.id ? 
+                                        `<button class="btn btn-danger btn-sm" onclick="viewBookDetails(${book.id})">
+                                            <i class="fas fa-eye me-1"></i>View Details
+                                        </button>` :
+                                        `<button class="btn btn-danger btn-sm" onclick="showBookDetails(${JSON.stringify(book).replace(/"/g, '&quot;')})">
+                                            <i class="fas fa-plus me-1"></i>Add to Library
+                                        </button>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p class="text-muted">No book information found for this code.</p>';
+                }
+
+                html += '</div>';
+            });
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+
+        // Manual entry handler
+        function handleManualEntry() {
+            if (universalScanner) {
+                universalScanner.enhancedManualEntry();
+            }
+        }
+
+        // Toggle description function
+        function toggleDescription(button, fullDescription) {
+            const descContainer = button.parentElement;
+            const isExpanded = button.textContent.trim() === 'Show Less';
+            
+            if (isExpanded) {
+                // Collapse description
+                descContainer.innerHTML = `${fullDescription.substring(0, 200)}...
+                    <button class="btn btn-link btn-sm p-0 ms-1" onclick="toggleDescription(this, \`${fullDescription.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+                        <small>Show More</small>
+                    </button>`;
+            } else {
+                // Expand description
+                descContainer.innerHTML = `${fullDescription}
+                    <button class="btn btn-link btn-sm p-0 ms-1" onclick="toggleDescription(this, \`${fullDescription.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+                        <small>Show Less</small>
+                    </button>`;
+            }
+        }
+
+        // Placeholder functions for book details
+        function viewBookDetails(bookId) {
+            console.log('View book details:', bookId);
+            // Navigate to book details or show modal
+        }
+
+        function showBookDetails(bookData) {
+            console.log('Show book details:', bookData);
+            // Fill form with book data and show modal
+        }
+
+        // Toggle scanner function (for the bottom action bar)
+        function toggleScanner() {
+            if (universalScanner) {
+                if (universalScanner.isScannerActive) {
+                    universalScanner.stop();
+                } else {
+                    universalScanner.start();
+                }
+            }
+        }
+    </script>
+{% endblock %}

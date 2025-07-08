@@ -1,0 +1,878 @@
+{% extends "base.html" %}
+
+{% block title %}System Test - Library Management System{% endblock %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/scanner.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    {% set current_page = 'system-test' %}
+    {% include 'header.html' %}
+
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="gradient-text"><i class="fas fa-cog me-2"></i>System Test - Complete Workflow</h2>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Status Overview -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>System Status Overview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 id="testsRun" class="text-danger">0</h3>
+                                    <small class="text-muted">Tests Run</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 id="testsPassed" class="text-dark">0</h3>
+                                    <small class="text-muted">Tests Passed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 id="testsFailed" class="text-danger">0</h3>
+                                    <small class="text-muted">Tests Failed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 id="systemStatus" class="text-dark">Ready</h3>
+                                    <small class="text-muted">System Status</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Test Sections -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-danger text-white">
+                        <h5><i class="fas fa-plus-circle me-2"></i>1. Add New Books</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Process:</strong></p>
+                        <ol>
+                            <li>Scan ISBN barcode or enter manually</li>
+                            <li>System fetches book info from Google Books</li>
+                            <li>Review and confirm book details</li>
+                            <li>Set number of copies</li>
+                            <li>Add to library database</li>
+                        </ol>
+                        <div class="mt-3">
+                            <a href="/books" class="btn btn-danger">
+                                <i class="fas fa-barcode me-2"></i>Manage Books
+                            </a>
+                        </div>
+                        
+                        <hr>
+                        <h6>Test ISBNs (Google Books API):</h6>
+                        <small class="text-muted">
+                            • 9780134685991 (Effective Java)<br>
+                            • 9781449331818 (Learning Python)<br>
+                            • 9780132350884 (Clean Code)<br>
+                            • 9781617294945 (Spring in Action)
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white">
+                        <h5><i class="fas fa-qrcode me-2"></i>2. Generate QR Codes</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Process:</strong></p>
+                        <ol>
+                            <li>Each book gets a unique QR code</li>
+                            <li>QR code contains book UUID</li>
+                            <li>Print QR codes and attach to books</li>
+                            <li>Use for circulation management</li>
+                        </ol>
+                        
+                        <div class="mt-3">
+                            <h6>Test QR Codes:</h6>
+                            <div id="qrCodes" class="small">
+                                Loading...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-danger text-white">
+                        <h5><i class="fas fa-exchange-alt me-2"></i>3. Check-In/Check-Out</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Process:</strong></p>
+                        <ol>
+                            <li>Scan book QR code</li>
+                            <li>Select member</li>
+                            <li>Choose check-out or check-in</li>
+                            <li>System updates availability</li>
+                            <li>Records transaction</li>
+                        </ol>
+                        <div class="mt-3">
+                            <a href="/circulation" class="btn btn-danger">
+                                <i class="fas fa-qrcode me-2"></i>Circulation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Member QR Code Testing Section -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5><i class="fas fa-id-card me-2"></i>4. Member QR Scanning</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-dark">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Ready to use existing company cards!</strong>
+                        </div>
+                        
+                        <p><strong>Process:</strong></p>
+                        <ol>
+                            <li>Use existing company employee QR cards</li>
+                            <li>Scan during checkout to auto-select member</li>
+                            <li>System looks up by employee code</li>
+                            <li>Continue with book scanning</li>
+                        </ol>
+                        
+                        <div class="card border-dark">
+                            <div class="card-body">
+                                <h6 class="card-title">Expected QR Code Format:</h6>
+                                <p class="card-text">
+                                    Your company QR codes should contain the employee number/code.<br>
+                                    <strong>Example:</strong> <code>525552</code> (just the employee number)
+                                </p>
+                                <small class="text-muted">
+                                    The system will automatically detect employee codes and look up the corresponding member.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Supported Formats:</h6>
+                            <ul>
+                                <li>Simple employee code: <code>525552</code></li>
+                                <li>JSON format: <code>{"type": "library_member", "employee_code": "525552"}</code></li>
+                                <li>Any QR containing the employee number will work</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5><i class="fas fa-mobile-alt me-2"></i>Member QR Test Instructions</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Go to the <a href="/circulation" target="_blank">Circulation page</a></li>
+                            <li>Select "Check Out" mode</li>
+                            <li>Click "Scan Member Card" OR just start the main scanner</li>
+                            <li>Scan your company employee QR card with your phone</li>
+                            <li>The member should be automatically selected</li>
+                            <li>Then scan a book QR code to complete the checkout</li>
+                        </ol>
+                        
+                        <div class="alert alert-dark">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Tip:</strong> The system automatically detects member QR codes vs. book QR codes. You can scan them in any order!
+                        </div>
+                        
+                        <div class="alert alert-dark">
+                            <i class="fas fa-id-card me-2"></i>
+                            <strong>Current Employee Codes in System:</strong><br>
+                            <div id="memberCodes">Loading...</div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <a href="/circulation" class="btn btn-dark">
+                                <i class="fas fa-id-card me-2"></i>Test Member Scanning
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cogs me-2"></i>API Test Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>ISBN Lookup Test</h6>
+                                <button class="btn btn-outline-danger btn-sm" onclick="testISBNLookup()">
+                                    Test ISBN API
+                                </button>
+                                <div id="isbnResult" class="mt-2"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>QR Code Test</h6>
+                                <button class="btn btn-outline-dark btn-sm" onclick="testQRCode()">
+                                    Test QR API
+                                </button>
+                                <div id="qrResult" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comprehensive Scanner Testing Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-dark">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i>5. Scanner & Browser Diagnostics</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Important Information Alert -->
+                        <div class="alert alert-dark mb-4">
+                            <h6><i class="fas fa-info-circle me-2"></i>About "BarcodeDetector Not Available" Messages</h6>
+                            <p class="mb-2">
+                                <strong>Don't worry!</strong> If you see "BarcodeDetector not available" warnings, this is completely normal and expected.
+                            </p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Why this happens:</strong>
+                                    <ul class="small mb-0">
+                                        <li>BarcodeDetector is experimental in Chrome</li>
+                                        <li>It requires special browser flags to enable</li>
+                                        <li>Most browsers don't support it yet</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>How your system works:</strong>
+                                    <ul class="small mb-0">
+                                        <li>✅ Uses ZXing library as primary scanner</li>
+                                        <li>✅ Works perfectly in all browsers</li>
+                                        <li>✅ Actually more reliable than BarcodeDetector</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>API & Detection Tests</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="btn-group-vertical w-100 mb-3" role="group">
+                                            <button class="btn btn-outline-danger" onclick="testISBNAPI()">Test ISBN API</button>
+                                            <button class="btn btn-outline-danger" onclick="testUUIDAPI()">Test UUID API</button>
+                                            <button class="btn btn-outline-dark" onclick="testBarcodeDetector()">Test BarcodeDetector</button>
+                                        </div>
+                                        <div id="scannerApiResults"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Manual Input Test</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <input type="text" id="scannerManualInput" class="form-control mb-2" placeholder="Enter ISBN or UUID">
+                                        <button class="btn btn-danger w-100" onclick="testScannerManualInput()">Test Manual Input</button>
+                                        <div id="scannerManualResults" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Browser Compatibility Check</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <button class="btn btn-dark" onclick="checkScannerCompatibility()">Check Browser Capabilities</button>
+                                        <div id="scannerCompatibilityResults" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Optional: How to Enable BarcodeDetector -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <button class="btn btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#barcodeDetectorInfo">
+                                        <i class="fas fa-question-circle me-2"></i>Optional: How to Enable BarcodeDetector (Not Required)
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="barcodeDetectorInfo" class="collapse">
+                                <div class="card-body">
+                                    <div class="alert alert-warning">
+                                        <strong>⚠️ Note:</strong> This is completely optional! Your system works great without BarcodeDetector.
+                                    </div>
+                                    <p><strong>If you want to enable experimental BarcodeDetector in Chrome:</strong></p>
+                                    <ol>
+                                        <li>Open Chrome and go to: <code>chrome://flags</code></li>
+                                        <li>Search for: "Experimental Web Platform features"</li>
+                                        <li>Enable the flag and restart Chrome</li>
+                                        <li>Or visit: <code>chrome://flags/#enable-experimental-web-platform-features</code></li>
+                                    </ol>
+                                    <p class="small text-muted">
+                                        <strong>Benefits:</strong> Slightly faster QR detection in some cases<br>
+                                        <strong>Downsides:</strong> Experimental, may break, less reliable than ZXing
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-dark">
+                    <h6><i class="fas fa-info-circle me-2"></i>Quick Navigation</h6>
+                    <div class="btn-group" role="group">
+                        <a href="/" class="btn btn-outline-danger">Home</a>
+                        <a href="/books" class="btn btn-outline-danger">Books Management</a>
+                        <a href="/circulation" class="btn btn-outline-danger">Circulation</a>
+                        <a href="/members" class="btn btn-outline-danger">Members</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add ZXing library for QR code support in browsers without BarcodeDetector -->
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+    <script src="{{ url_for('static', filename='js/isbn-utils.js') }}?v=20250707-103000"></script>
+    <script src="{{ url_for('static', filename='js/id-pattern-utils.js') }}?v=20250707-103000"></script>
+    <script src="{{ url_for('static', filename='js/scanner-module.js') }}?v=20250707-103000"></script>
+    <script>
+        // Test tracking variables
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0
+        };
+
+        // Update test status display
+        function updateTestStatus() {
+            document.getElementById('testsRun').textContent = testResults.total;
+            document.getElementById('testsPassed').textContent = testResults.passed;
+            document.getElementById('testsFailed').textContent = testResults.failed;
+            
+            // Update system status
+            const statusElement = document.getElementById('systemStatus');
+            if (testResults.total === 0) {
+                statusElement.textContent = 'Ready';
+                statusElement.className = 'text-dark';
+            } else if (testResults.failed === 0) {
+                statusElement.textContent = 'All Tests Pass';
+                statusElement.className = 'text-dark';
+            } else {
+                statusElement.textContent = 'Issues Found';
+                statusElement.className = 'text-danger';
+            }
+        }
+
+        // Record test result
+        function recordTestResult(passed) {
+            testResults.total++;
+            if (passed) {
+                testResults.passed++;
+            } else {
+                testResults.failed++;
+            }
+            updateTestStatus();
+        }
+
+        // Load system status
+        async function loadSystemStatus() {
+            // Reset test counters when page loads
+            testResults = { total: 0, passed: 0, failed: 0 };
+            updateTestStatus();
+            
+            // Run basic system checks
+            try {
+                // Test 1: Check if API endpoints are accessible
+                const booksResponse = await fetch('/api/books');
+                recordTestResult(booksResponse.ok);
+                
+                // Test 2: Check members API
+                const membersResponse = await fetch('/api/members');
+                recordTestResult(membersResponse.ok);
+                
+                // Test 3: Check if required JavaScript libraries are loaded
+                recordTestResult(typeof ZXing !== 'undefined');
+                
+                // Test 4: Check browser capabilities
+                const hasCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                recordTestResult(hasCamera);
+                
+                // Test 5: Check secure context
+                const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
+                recordTestResult(isSecure);
+                
+            } catch (error) {
+                console.error('Error during system status check:', error);
+                recordTestResult(false);
+            }
+        }
+        
+        // Load QR codes for testing
+        async function loadQRCodes() {
+            try {
+                const response = await fetch('/api/books');
+                const data = await response.json();
+                
+                const qrDiv = document.getElementById('qrCodes');
+                let html = '';
+                
+                data.books.slice(0, 3).forEach(book => {
+                    html += `
+                        <div class="mb-2">
+                            <strong>${book.title}</strong><br>
+                            <a href="/api/test/qr/${book.uuid}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-qrcode me-1"></i>View QR
+                            </a>
+                        </div>
+                    `;
+                });
+                
+                qrDiv.innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('qrCodes').innerHTML = '<span class="text-danger">Error loading QR codes</span>';
+            }
+        }
+        
+        // Test ISBN lookup
+        async function testISBNLookup() {
+            const resultDiv = document.getElementById('isbnResult');
+            resultDiv.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Testing Google Books API...';
+            
+            try {
+                // Test with a well-known ISBN
+                const testISBN = '9780134685991'; // Effective Java
+                const response = await fetch(`/api/isbn/lookup/${testISBN}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    recordTestResult(true);
+                    const bookInfo = data.book_info;
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-dark alert-sm">
+                            <strong>✅ Google Books API Working!</strong><br>
+                            <small>
+                                <strong>Title:</strong> ${bookInfo.title || 'N/A'}<br>
+                                <strong>Author:</strong> ${bookInfo.author || 'N/A'}<br>
+                                <strong>Publisher:</strong> ${bookInfo.publisher || 'N/A'}<br>
+                                <strong>ISBN:</strong> ${bookInfo.isbn || testISBN}<br>
+                                <strong>Language:</strong> ${bookInfo.language || 'N/A'}
+                                ${bookInfo.existing_in_library ? '<br><span class="badge bg-dark">Already in Library</span>' : ''}
+                            </small>
+                        </div>
+                    `;
+                } else {
+                    recordTestResult(false);
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-warning alert-sm">
+                            <strong>⚠️ Google Books API Response:</strong><br>
+                            <small>${data.message}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                recordTestResult(false);
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger alert-sm">
+                        <strong>❌ API Test Failed:</strong><br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+        
+        // Test QR code
+        async function testQRCode() {
+            const resultDiv = document.getElementById('qrResult');
+            resultDiv.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Testing...';
+            
+            try {
+                // Get first book UUID
+                const booksResponse = await fetch('/api/books');
+                const booksData = await booksResponse.json();
+                
+                if (booksData.books.length > 0) {
+                    const uuid = booksData.books[0].uuid;
+                    const response = await fetch(`/api/books/uuid/${uuid}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        recordTestResult(true);
+                        resultDiv.innerHTML = `
+                            <div class="alert alert-dark alert-sm">
+                                ✅ Found: ${data.book.title}
+                            </div>
+                        `;
+                    } else {
+                        recordTestResult(false);
+                        resultDiv.innerHTML = `
+                            <div class="alert alert-warning alert-sm">
+                                ⚠️ ${data.message}
+                            </div>
+                        `;
+                    }
+                } else {
+                    recordTestResult(false);
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-warning alert-sm">
+                            ⚠️ No books in database
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                recordTestResult(false);
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger alert-sm">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemStatus();
+            loadQRCodes();
+            loadMemberCodes();
+            
+            // Automatically run API tests
+            setTimeout(() => {
+                testISBNLookup();
+            }, 1000);
+            
+            setTimeout(() => {
+                testQRCode();
+            }, 2000);
+        });
+        
+        // Load member information
+        async function loadMemberCodes() {
+            try {
+                const response = await fetch('/api/members');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('memberCodes');
+                    let html = '';
+                    
+                    data.members.forEach(member => {
+                        html += `
+                            <div class="border rounded p-2 mb-2">
+                                <strong>${member.first_name} ${member.last_name}</strong><br>
+                                <small>
+                                    Employee Code: <code>${member.employee_code || 'N/A'}</code><br>
+                                    Member ID: ${member.member_id}<br>
+                                    Department: ${member.department || 'N/A'}<br>
+                                    Status: <span class="badge ${member.status === 'active' ? 'bg-success' : 'bg-warning'}">${member.status}</span>
+                                </small>
+                            </div>
+                        `;
+                    });
+                    
+                    if (html === '') {
+                        html = '<div class="text-muted">No members found. Add members first.</div>';
+                    }
+                    
+                    container.innerHTML = html;
+                } else {
+                    document.getElementById('memberCodes').innerHTML = '<div class="alert alert-warning">Failed to load members</div>';
+                }
+            } catch (error) {
+                console.error('Error loading members:', error);
+                document.getElementById('memberCodes').innerHTML = '<div class="alert alert-danger">Error loading members</div>';
+            }
+        }
+        
+        // Test ISBN API
+        async function testISBNAPI() {
+            const resultsDiv = document.getElementById('scannerApiResults');
+            resultsDiv.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Testing ISBN API...';
+            
+            try {
+                const response = await fetch('/api/books/isbn/9780134685991');
+                const data = await response.json();
+                
+                if (data.success) {
+                    recordTestResult(true);
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-dark">
+                            <strong>✅ ISBN API Working!</strong><br>
+                            Found: ${data.book.title} by ${data.book.author}
+                        </div>
+                    `;
+                } else {
+                    recordTestResult(false);
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <strong>⚠️ ISBN API Response:</strong><br>
+                            ${data.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                recordTestResult(false);
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>❌ ISBN API Error:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Test UUID API
+        async function testUUIDAPI() {
+            const resultsDiv = document.getElementById('scannerApiResults');
+            resultsDiv.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Testing UUID API...';
+            
+            try {
+                const response = await fetch('/api/books/uuid/e4c467f3-36f9-4ce3-aea2-81cf8b5d22b0');
+                const data = await response.json();
+                
+                if (data.success) {
+                    recordTestResult(true);
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-dark">
+                            <strong>✅ UUID API Working!</strong><br>
+                            Found: ${data.book.title} by ${data.book.author}
+                        </div>
+                    `;
+                } else {
+                    recordTestResult(false);
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <strong>⚠️ UUID API Response:</strong><br>
+                            ${data.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                recordTestResult(false);
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>❌ UUID API Error:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Test BarcodeDetector
+        function testBarcodeDetector() {
+            const resultsDiv = document.getElementById('scannerApiResults');
+            
+            if ('BarcodeDetector' in window) {
+                BarcodeDetector.getSupportedFormats().then(formats => {
+                    recordTestResult(true);
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-dark">
+                            <strong>✅ BarcodeDetector Available!</strong><br>
+                            Supported formats: ${formats.join(', ')}<br>
+                            <small>Primary scanning method will use native BarcodeDetector.</small>
+                        </div>
+                    `;
+                }).catch(e => {
+                    recordTestResult(false);
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <strong>⚠️ BarcodeDetector Partial Support:</strong><br>
+                            Available but cannot get formats: ${e.message}<br>
+                            <small>Will fall back to ZXing library for scanning.</small>
+                        </div>
+                    `;
+                });
+            } else {
+                // Check if ZXing is available
+                const hasZXing = typeof ZXing !== 'undefined';
+                recordTestResult(hasZXing);
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>ℹ️ BarcodeDetector Not Available (This is Normal!)</strong><br>
+                        BarcodeDetector is still experimental in Chrome and requires special flags to enable.<br>
+                        <br>
+                        <strong>Current Status:</strong><br>
+                        ${hasZXing ? 
+                            '✅ ZXing library loaded - QR/Barcode scanning works perfectly!' : 
+                            '❌ ZXing library not loaded - scanning may not work'
+                        }<br>
+                        <br>
+                        <div class="alert alert-dark py-2 mt-2">
+                            <strong>✅ Your System Works Great!</strong><br>
+                            The ZXing library provides better compatibility than BarcodeDetector anyway.
+                        </div>
+                        <br>
+                        <small class="text-muted">
+                            <strong>Technical Details:</strong><br>
+                            • BarcodeDetector requires Chrome flags or Chrome 88+ with origin trial<br>
+                            • ZXing library works in all browsers and provides excellent scanning<br>
+                            • Your warning messages are just informational - scanning works fine!
+                        </small>
+                    </div>
+                `;
+            }
+        }
+        
+        // Test manual input
+        async function testScannerManualInput() {
+            const input = document.getElementById('scannerManualInput').value;
+            const resultsDiv = document.getElementById('scannerManualResults');
+            
+            if (!input) {
+                resultsDiv.innerHTML = '<div class="alert alert-warning">Please enter an ISBN or UUID</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Testing...';
+            
+            // Test with UniversalScanner if available
+            if (typeof UniversalScanner !== 'undefined') {
+                const scanner = new UniversalScanner({
+                    onResults: (results) => {                    resultsDiv.innerHTML = `
+                        <div class="alert alert-dark">
+                            <strong>✅ Manual Input Success!</strong><br>
+                            Results: ${JSON.stringify(results, null, 2)}
+                        </div>
+                    `;
+                    },
+                    onError: (error) => {
+                        resultsDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <strong>❌ Manual Input Error:</strong><br>
+                                ${error}
+                            </div>
+                        `;
+                    }
+                });
+                
+                // Test the enhanced manual entry
+                if (input.length === 13 && input.startsWith('978')) {
+                    // Test as ISBN
+                    const bookInfo = await scanner.fetchBookInfoByISBN(input);
+                    scanner.callbacks.onResults([{
+                        type: 'ISBN (Manual Test)',
+                        books: [bookInfo]
+                    }]);
+                } else if (input.length === 36 && input.includes('-')) {
+                    // Test as UUID
+                    const bookInfo = await scanner.fetchBookByUUID(input);
+                    scanner.callbacks.onResults([{
+                        type: 'UUID (Manual Test)',
+                        books: [bookInfo]
+                    }]);
+                } else {
+                    scanner.callbacks.onError('Invalid format. Enter a valid ISBN (13 digits starting with 978) or UUID (36 characters with dashes)');
+                }
+            } else {
+                resultsDiv.innerHTML = '<div class="alert alert-danger">UniversalScanner not loaded</div>';
+            }
+        }
+        
+        // Check browser capabilities
+        function checkScannerCompatibility() {
+            const resultsDiv = document.getElementById('scannerCompatibilityResults');
+            
+            // Check various capabilities
+            const capabilities = {
+                'BarcodeDetector API': 'BarcodeDetector' in window,
+                'ZXing Library': typeof ZXing !== 'undefined',
+                'Camera Access (getUserMedia)': !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+                'Secure Context (HTTPS/localhost)': location.protocol === 'https:' || location.hostname === 'localhost',
+                'File API': typeof FileReader !== 'undefined',
+                'Canvas API': !!document.createElement('canvas').getContext
+            };
+            
+            let html = '<div class="row">';
+            
+            for (const [feature, available] of Object.entries(capabilities)) {
+                // Special handling for BarcodeDetector
+                const isOptional = feature === 'BarcodeDetector API';
+                const status = available ? 'dark' : (isOptional ? 'warning' : 'danger');
+                const icon = available ? 'check-circle' : (isOptional ? 'exclamation-triangle' : 'times-circle');
+                const statusText = available ? 'Available' : (isOptional ? 'Not Available (Normal)' : 'Not Available');
+                
+                html += `
+                    <div class="col-md-6 mb-2">
+                        <div class="alert alert-${status} py-2">
+                            <i class="fas fa-${icon} me-2"></i>
+                            <strong>${feature}:</strong> ${statusText}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            
+            // Add scanning capability summary
+            const canScan = capabilities['ZXing Library'] && capabilities['Camera Access (getUserMedia)'] && capabilities['Secure Context (HTTPS/localhost)'];
+            
+            html += `
+                <div class="alert alert-${canScan ? 'dark' : 'warning'} mt-3">
+                    <h6><i class="fas fa-${canScan ? 'check' : 'exclamation-triangle'} me-2"></i>Scanning Capability Summary:</h6>
+                    ${canScan ? 
+                        '<strong>✅ QR/Barcode scanning should work perfectly!</strong><br>Your browser supports all required features for scanning.' :
+                        '<strong>⚠️ Some scanning features may not work.</strong><br>Check the requirements above.'
+                    }
+                    <br><br>
+                    <small class="text-muted">
+                        <strong>How it works:</strong><br>
+                        1. If BarcodeDetector is available → Use native browser scanning (fastest)<br>
+                        2. If not available → Use ZXing library fallback (works on all browsers)<br>
+                        3. Camera access and secure context are required for both methods
+                    </small>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+    
+    <div id="toast-container"></div>
+    </div>
+{% endblock %}

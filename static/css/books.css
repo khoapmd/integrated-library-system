@@ -1,0 +1,55 @@
+/* Books page specific styles */
+
+.book-card {
+    transition: all 0.4s ease;
+    border: none;
+    border-radius: 15px;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.book-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(219, 1, 28, 0.15);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-title {
+    color: var(--dark-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+}
+
+.card-text {
+    color: #666;
+    line-height: 1.6;
+}
+
+.card-footer {
+    background: #f8f9fa !important;
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+.btn-group .btn {
+    border-radius: 8px;
+    margin: 0 2px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Loading animation */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.book-card:hover .card-title {
+    animation: pulse 0.6s ease-in-out;
+}

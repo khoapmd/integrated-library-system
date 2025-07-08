@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator for Testing</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        #qrcode { margin: 20px 0; text-align: center; }
+        button { margin: 5px; padding: 10px; }
+        input, select { margin: 5px; padding: 8px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+    <h1>QR Code Generator for Library Testing</h1>
+    
+    <div class="section">
+        <h2>Generate Test QR Code</h2>
+        <div>
+            <label>Book UUID:</label>
+            <input type="text" id="bookUuid" placeholder="Enter book UUID or leave empty for random">
+            <button onclick="generateRandomUuid()">Generate Random UUID</button>
+        </div>
+        <div>
+            <label>Book Title:</label>
+            <input type="text" id="bookTitle" value="Test Book" placeholder="Book title">
+        </div>
+        <div>
+            <button onclick="generateQR()">Generate QR Code</button>
+            <button onclick="getExistingBook()">Use Existing Book</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Generated QR Code</h2>
+        <div id="qrcode"></div>
+        <div id="qrdata"></div>
+        <div>
+            <button onclick="downloadQR()">Download QR Code</button>
+            <button onclick="printQR()">Print QR Code</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Existing Books</h2>
+        <button onclick="loadBooks()">Load Available Books</button>
+        <select id="existingBooks" style="width: 100%; margin: 10px 0;">
+            <option value="">Select a book...</option>
+        </select>
+        <button onclick="generateFromSelected()">Generate QR for Selected Book</button>
+    </div>
+
+    <script>
+        let currentQRCanvas = null;
+
+        function generateRandomUuid() {
+            const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            document.getElementById('bookUuid').value = uuid;
+        }
+
+        async function generateQR() {
+            const uuid = document.getElementById('bookUuid').value || generateRandomUuid();
+            const title = document.getElementById('bookTitle').value || 'Test Book';
+            
+            // Create the library book QR data
+            const qrData = {
+                type: 'library_book',
+                uuid: uuid,
+                title: title,
+                generated: new Date().toISOString()
+            };
+
+            const qrString = JSON.stringify(qrData);
+            
+            try {
+                // Clear previous QR code
+                const container = document.getElementById('qrcode');
+                container.innerHTML = '';
+                
+                // Generate QR code
+                const canvas = await QRCode.toCanvas(qrString, {
+                    width: 300,
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#FFFFFF'
+                    }
+                });
+                
+                container.appendChild(canvas);
+                currentQRCanvas = canvas;
+                
+                // Show the data
+                document.getElementById('qrdata').innerHTML = `
+                    <h3>QR Code Data:</h3>
+                    <pre>${JSON.stringify(qrData, null, 2)}</pre>
+                    <p><strong>Raw String:</strong> ${qrString}</p>
+                `;
+                
+            } catch (error) {
+                console.error('QR generation error:', error);
+                document.getElementById('qrcode').innerHTML = 
+                    `<div style="color: red;">Error generating QR code: ${error.message}</div>`;
+            }
+        }
+
+        async function loadBooks() {
+            try {
+                const response = await fetch('/api/books');
+                const data = await response.json();
+                
+                const select = document.getElementById('existingBooks');
+                select.innerHTML = '<option value="">Select a book...</option>';
+                
+                if (data.success && data.books) {
+                    data.books.forEach(book => {
+                        const option = document.createElement('option');
+                        option.value = JSON.stringify({
+                            uuid: book.uuid,
+                            title: book.title,
+                            author: book.author
+                        });
+                        option.textContent = `${book.title} by ${book.author} (${book.uuid})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">No books found</option>';
+                }
+            } catch (error) {
+                console.error('Error loading books:', error);
+                document.getElementById('existingBooks').innerHTML = 
+                    '<option value="">Error loading books</option>';
+            }
+        }
+
+        function generateFromSelected() {
+            const select = document.getElementById('existingBooks');
+            const selectedValue = select.value;
+            
+            if (!selectedValue) {
+                alert('Please select a book first');
+                return;
+            }
+            
+            try {
+                const bookData = JSON.parse(selectedValue);
+                document.getElementById('bookUuid').value = bookData.uuid;
+                document.getElementById('bookTitle').value = bookData.title;
+                generateQR();
+            } catch (error) {
+                console.error('Error parsing book data:', error);
+            }
+        }
+
+        async function getExistingBook() {
+            try {
+                const response = await fetch('/api/books?per_page=1');
+                const data = await response.json();
+                
+                if (data.success && data.books && data.books.length > 0) {
+                    const book = data.books[0];
+                    document.getElementById('bookUuid').value = book.uuid;
+                    document.getElementById('bookTitle').value = book.title;
+                    generateQR();
+                } else {
+                    alert('No books found in the system');
+                }
+            } catch (error) {
+                console.error('Error fetching book:', error);
+                alert('Error fetching book data');
+            }
+        }
+
+        function downloadQR() {
+            if (!currentQRCanvas) {
+                alert('Generate a QR code first');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.download = `library-book-qr-${Date.now()}.png`;
+            link.href = currentQRCanvas.toDataURL();
+            link.click();
+        }
+
+        function printQR() {
+            if (!currentQRCanvas) {
+                alert('Generate a QR code first');
+                return;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head><title>Library Book QR Code</title></head>
+                    <body style="text-align: center; padding: 20px;">
+                        <h2>Library Book QR Code</h2>
+                        <img src="${currentQRCanvas.toDataURL()}" style="max-width: 300px;">
+                        <p>Scan this QR code with the library circulation system</p>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Initialize with a random UUID
+        window.onload = function() {
+            generateRandomUuid();
+        };
+    </script>
+</body>
+</html>

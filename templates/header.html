@@ -1,0 +1,46 @@
+<!-- Shared Navigation Header -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand d-flex align-items-center" href="/">
+            <div class="brand-container">
+                <div class="brand-logo-row d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Milwaukee Library Management System Logo" class="navbar-logo me-2">
+                    <span class="brand-text d-none d-sm-inline">Integrated Library System</span>
+                </div>
+                <span class="brand-text-mobile d-block d-sm-none">Integrated Library System</span>
+            </div>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link{% if current_page == 'index' %} active{% endif %}" href="/">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if current_page == 'books' %} active{% endif %}" href="/books">
+                        <i class="fas fa-book me-1"></i>Books
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if current_page == 'circulation' %} active{% endif %}" href="/circulation">
+                        <i class="fas fa-exchange-alt me-1"></i>Circulation
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if current_page == 'members' %} active{% endif %}" href="/members">
+                        <i class="fas fa-users me-1"></i>Members
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if current_page == 'system-test' %} active{% endif %}" href="/system-test">
+                        <i class="fas fa-cog me-1"></i>System Test
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

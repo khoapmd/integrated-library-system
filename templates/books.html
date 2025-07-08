@@ -1,0 +1,1394 @@
+{% extends "base.html" %}
+
+{% block title %}Books - Library Management System{% endblock %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/books.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/scanner.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    {% set current_page = 'books' %}
+    {% include 'header.html' %}
+
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="gradient-text"><i class="fas fa-books me-2"></i>Book Management</h2>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#addBookModal">
+                        <i class="fas fa-plus me-2"></i>Add New Book
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search books by title, author, or ISBN..." id="searchInput">
+                    <button class="btn btn-outline-secondary" type="button" onclick="searchBooks()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" id="statusFilter" onchange="filterBooks()">
+                    <option value="">All Status</option>
+                    <option value="available">Available</option>
+                    <option value="borrowed">Borrowed</option>
+                    <option value="reserved">Reserved</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Books Grid -->
+        <div id="booksContainer" style="min-height: 500px;">
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p class="mt-2">Loading books...</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Books pagination" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Add Book Modal -->
+    <div class="modal fade" id="addBookModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Book</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- ISBN Scanner Section -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-barcode me-2"></i>ISBN Scanner</h6>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Scanner Preview -->
+                                    <div class="scanner-preview mb-3" id="isbnScannerPreview" style="height: 200px;">                                    <div class="text-center text-muted d-flex flex-column justify-content-center h-100">
+                                        <i class="fas fa-barcode fa-3x"></i>
+                                        <p class="mt-2">ISBN Scanner will appear here</p>
+                                        <small>Scan ISBN barcode to auto-fill book info</small>
+                                        <div class="mt-2">
+                                            <small class="text-warning">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                For best results, use Chrome or Edge browser
+                                            </small>
+                                        </div>
+                                    </div>
+                                    </div>
+                                    
+                                    <!-- Scanner Controls -->
+                                    <div class="d-grid gap-2">
+                                        <button type="button" id="startIsbnScannerBtn" class="btn btn-danger">
+                                            <i class="fas fa-camera me-2"></i>Start ISBN Scanner
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger" onclick="manualIsbnEntry()">
+                                            <i class="fas fa-keyboard me-2"></i>Manual ISBN Entry
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Upload Image -->
+                                    <div class="mt-3">
+                                        <label for="isbnImageUpload" class="form-label">Or upload barcode image:</label>
+                                        <input type="file" class="form-control" id="isbnImageUpload" accept="image/*">
+                                    </div>
+                                    
+                                    <!-- Scan Results -->
+                                    <div id="isbnScanResults" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Book Form Section -->
+                        <div class="col-md-6">
+                            <form id="addBookForm">
+                                <div class="mb-3">
+                                    <label for="isbn" class="form-label">ISBN</label>
+                                    <input type="text" class="form-control" id="isbn" name="isbn" placeholder="Enter ISBN or will be filled from scan">
+                                    <small class="form-text text-muted">Can be automatically filled when you scan an ISBN</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Title *</label>
+                                    <input type="text" class="form-control" id="title" name="title" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="author" class="form-label">Author *</label>
+                                    <input type="text" class="form-control" id="author" name="author" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="publisher" class="form-label">Publisher</label>
+                                    <input type="text" class="form-control" id="publisher" name="publisher">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="language" class="form-label">Language</label>
+                                        <input type="text" class="form-control" id="language" name="language" value="English">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="pages" class="form-label">Pages</label>
+                                        <input type="number" class="form-control" id="pages" name="pages">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="genre" class="form-label">Genre</label>
+                                        <input type="text" class="form-control" id="genre" name="genre">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="location" class="form-label">Shelf Location</label>
+                                        <input type="text" class="form-control" id="location" name="location" placeholder="e.g., A1-001">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="copies_total" class="form-label">Total Copies *</label>
+                                        <input type="number" class="form-control" id="copies_total" name="copies_total" value="1" min="1" required>
+                                        <small class="form-text text-muted">Auto-calculated based on existing copies</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="copies_available" class="form-label">Available Copies *</label>
+                                        <input type="number" class="form-control" id="copies_available" name="copies_available" value="1" min="1" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="4" placeholder="Book description..."></textarea>
+                                </div>
+                                
+                                <!-- Existing Book Warning -->
+                                <div id="existingBookWarning" class="alert alert-info d-none">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Book Already in Library</h6>
+                                    <p class="mb-0">This book is already in our collection. You can add more copies using the form above.</p>
+                                    <div id="existingBookInfo" class="mt-2"></div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-dark" onclick="clearForm()">
+                        <i class="fas fa-broom me-2"></i>Clear Form
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="saveBook()">
+                        <i class="fas fa-save me-2"></i>Save Book
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Book Modal -->
+    <div class="modal fade" id="editBookModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>Edit Book
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Book Info Section -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Book Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="editBookForm">
+                                        <input type="hidden" id="editBookId" name="id">
+                                        
+                                        <div class="mb-3">
+                                            <label for="editIsbn" class="form-label">ISBN</label>
+                                            <input type="text" class="form-control" id="editIsbn" name="isbn" readonly>
+                                            <small class="form-text text-muted">ISBN cannot be changed</small>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="editTitle" class="form-label">Title *</label>
+                                            <input type="text" class="form-control" id="editTitle" name="title" required>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="editAuthor" class="form-label">Author *</label>
+                                            <input type="text" class="form-control" id="editAuthor" name="author" required>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="editPublisher" class="form-label">Publisher</label>
+                                            <input type="text" class="form-control" id="editPublisher" name="publisher">
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="editLanguage" class="form-label">Language</label>
+                                                <input type="text" class="form-control" id="editLanguage" name="language">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="editPages" class="form-label">Pages</label>
+                                                <input type="number" class="form-control" id="editPages" name="pages">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="editGenre" class="form-label">Genre</label>
+                                                <input type="text" class="form-control" id="editGenre" name="genre">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="editLocation" class="form-label">Shelf Location</label>
+                                                <input type="text" class="form-control" id="editLocation" name="location" placeholder="e.g., A1-001">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="editDescription" class="form-label">Description</label>
+                                            <textarea class="form-control" id="editDescription" name="description" rows="4"></textarea>
+                                        </div>
+                                        
+                                        <!-- Move copy count and status fields into the form -->
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="editCopiesTotal" class="form-label">Total Copies *</label>
+                                                <input type="number" class="form-control" id="editCopiesTotal" name="copies_total" min="1" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="editCopiesAvailable" class="form-label">Available Copies *</label>
+                                                <input type="number" class="form-control" id="editCopiesAvailable" name="copies_available" min="0" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="editStatus" class="form-label">Status</label>
+                                            <select class="form-select" id="editStatus" name="status">
+                                                <option value="available">Available</option>
+                                                <option value="borrowed">Borrowed</option>
+                                                <option value="reserved">Reserved</option>
+                                                <option value="maintenance">Maintenance</option>
+                                            </select>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Inventory Management Section (visual display only) -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-warehouse me-2"></i>Inventory Statistics</h6>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Current Statistics -->
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Current Statistics</h6>
+                                            <div id="editBookStats">
+                                                <!-- Will be populated with current book stats -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Validation Warnings -->
+                                    <div id="editValidationWarnings" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-dark" onclick="refreshBookInfo()">
+                        <i class="fas fa-sync me-2"></i>Refresh from ISBN
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="updateBook()">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div class="modal fade" id="qrCodeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">QR Code</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center qr-code-modal">
+                    <div id="qrCodeContent">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Generating QR code...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" onclick="downloadQRCode()">Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart Code Scanner Modal -->
+    <div class="modal fade" id="isbnScannerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-qrcode me-2"></i>Smart Code Scanner
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <p class="text-muted">Automatically detects ISBN barcodes and QR codes</p>
+                    </div>
+
+                    <!-- Camera Preview -->
+                    <div class="camera-container">
+                        <div class="camera-preview" id="modalCameraPreview">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-camera fa-3x"></i>
+                                <p class="mt-2">Scanner will appear here</p>
+                                <small>The scanner will automatically detect QR codes and ISBN barcodes</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scanner Controls -->
+                    <div class="scanner-controls mt-3">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-danger flex-fill" id="modalToggleBtn">
+                                <i class="fas fa-camera me-2"></i>Start Scanner
+                            </button>
+                            <label for="modalFileInput" class="btn btn-outline-danger flex-fill">
+                                <i class="fas fa-upload me-2"></i>Upload Image
+                            </label>
+                            <input type="file" id="modalFileInput" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- Scanning Status -->
+                    <div id="modalStatusDiv" class="text-center mt-3" style="display: none;">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p class="mt-2">Scanning for codes...</p>
+                    </div>
+
+                    <!-- Scan Results -->
+                    <div id="modalResultsDiv" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual ISBN Entry Modal -->
+    <div class="modal fade" id="manualIsbnModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-keyboard me-2"></i>Manual ISBN Entry
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="manualIsbnInput" class="form-label">ISBN Number:</label>
+                        <input type="text" class="form-control form-control-lg" id="manualIsbnInput" 
+                               placeholder="Enter ISBN (10 or 13 digits)" 
+                               pattern="[0-9X-]*" 
+                               maxlength="17">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Enter a 10 or 13 digit ISBN number. Hyphens and X are allowed.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Examples:</h6>
+                        <small class="text-muted">
+                            <code>978-0-123-45678-9</code> or <code>9780123456789</code><br>
+                            <code>0-123-45678-X</code> or <code>012345678X</code>
+                        </small>
+                    </div>
+                    <div id="isbnValidation" class="mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="processManualIsbn()" id="processIsbnBtn" disabled>
+                        <i class="fas fa-search me-2"></i>Look Up Book
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+    <script src="{{ url_for('static', filename='js/isbn-utils.js') }}?v=20250707-095800"></script>
+    <script src="{{ url_for('static', filename='js/id-pattern-utils.js') }}?v=20250707-095800"></script>
+    <script src="{{ url_for('static', filename='js/scanner-module.js') }}?v=20250707-095800"></script>
+    <script>
+        let currentPage = 1;
+        let currentSearch = '';
+        let currentFilter = '';
+        let currentQRCode = '';
+
+        // Load books
+        async function loadBooks(page = 1, search = '', status = '') {
+            try {
+                let url = `/api/books?page=${page}&per_page=12`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (status) url += `&status=${status}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                displayBooks(data.books);
+                displayPagination(data.current_page, data.pages, data.total);
+            } catch (error) {
+                console.error('Error loading books:', error);
+                document.getElementById('booksContainer').innerHTML = 
+                    '<div class="alert alert-danger">Error loading books</div>';
+            }
+        }
+
+        function displayBooks(books) {
+            const container = document.getElementById('booksContainer');
+            
+            if (books.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No books found</div>';
+                return;
+            }
+
+            const html = `
+                <div class="row">
+                    ${books.map(book => `
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card book-card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">${book.title}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">by ${book.author}</small><br>
+                                        ${book.isbn ? `<small>ISBN: ${book.isbn}</small><br>` : ''}
+                                        <small>Location: ${book.location || 'Not specified'}</small>
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-${book.status === 'available' ? 'success' : book.status === 'borrowed' ? 'danger' : 'warning'}">
+                                            ${book.status}
+                                        </span>
+                                        <small class="text-muted">${book.copies_available}/${book.copies_total} available</small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="btn-group w-100" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="generateQR(${book.id})" title="Generate QR Code">
+                                            <i class="fas fa-qrcode"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="editBook(${book.id})" title="Edit Book">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBook(${book.id})" title="Delete Book">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function displayPagination(currentPage, totalPages, totalItems) {
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="loadBooks(${currentPage - 1}, '${currentSearch}', '${currentFilter}')">Previous</a>
+            </li>`;
+            
+            // Page numbers
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadBooks(${i}, '${currentSearch}', '${currentFilter}')">${i}</a>
+                </li>`;
+            }
+            
+            // Next button
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="loadBooks(${currentPage + 1}, '${currentSearch}', '${currentFilter}')">Next</a>
+            </li>`;
+            
+            pagination.innerHTML = html;
+        }
+
+        // Search and filter functions
+        function searchBooks() {
+            currentSearch = document.getElementById('searchInput').value.trim();
+            currentPage = 1;
+            loadBooks(currentPage, currentSearch, currentFilter);
+        }
+
+        function filterBooks() {
+            currentFilter = document.getElementById('statusFilter').value;
+            currentPage = 1;
+            loadBooks(currentPage, currentSearch, currentFilter);
+        }
+
+        // Book management functions
+        async function addBook() {
+            const form = document.getElementById('addBookForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/books', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addBookModal')).hide();
+                    form.reset();
+                    loadBooks(currentPage, currentSearch, currentFilter);
+                    showSuccess('Book added successfully!');
+                } else {
+                    showError('Error adding book: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error adding book:', error);
+                showError('Error adding book');
+            }
+        }
+
+        async function lookupISBN() {
+            const isbn = document.getElementById('isbn').value.trim();
+            if (!isbn) {
+                showWarning('Please enter an ISBN');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/isbn/${isbn}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const book = result.book_info;
+                    document.getElementById('title').value = book.title || '';
+                    document.getElementById('author').value = book.author || '';
+                    document.getElementById('publisher').value = book.publisher || '';
+                    document.getElementById('language').value = book.language || 'English';
+                    document.getElementById('description').value = book.description || '';
+                    if (book.pages || book.pageCount) document.getElementById('pages').value = book.pages || book.pageCount;
+                    
+                    // Show success message
+                    showSuccess('Book information loaded successfully!');
+                } else {
+                    showWarning('Book not found for this ISBN');
+                }
+            } catch (error) {
+                console.error('Error looking up ISBN:', error);
+                showError('Error looking up ISBN');
+            }
+        }
+
+        // ISBN Scanner Functions using UniversalScanner
+        let modalScanner = null;
+
+        function scanISBNForForm() {
+            // Initialize scanner if not already done
+            if (!modalScanner) {
+                modalScanner = new UniversalScanner({
+                    scanInterval: 2000,
+                    autoStop: true,
+                    onResults: handleScanResults,
+                    onError: handleScanError
+                });
+
+                modalScanner.init({
+                    preview: '#modalCameraPreview',
+                    toggleBtn: '#modalToggleBtn',
+                    uploadInput: '#modalFileInput',
+                    statusDiv: '#modalStatusDiv',
+                    resultsDiv: '#modalResultsDiv'
+                });
+
+                // Override the default result handler methods
+                modalScanner.viewBookDetails = function(bookId) {
+                    // Navigate to book details or show modal
+                    console.log('View book details:', bookId);
+                };
+
+                modalScanner.showBookDetails = function(bookData) {
+                    // Fill form with book data and close modal
+                    useScannedISBN(
+                        bookData.isbn || '',
+                        bookData.title || '',
+                        bookData.author || '',
+                        bookData.publisher || '',
+                        bookData.language || 'English',
+                        bookData.description || ''
+                    );
+                };
+            }
+
+            // Show the scanner modal
+            new bootstrap.Modal(document.getElementById('isbnScannerModal')).show();
+        }
+
+        function handleScanResults(results, isAutomatic) {
+            if (results.length === 0) {
+                document.getElementById('modalResultsDiv').innerHTML = 
+                    '<div class="alert alert-warning"><i class="fas fa-search me-2"></i>No codes detected in the image. Try adjusting the position or lighting.</div>';
+                return;
+            }
+
+            let html = '';
+            results.forEach(result => {
+                const typeIcon = result.type === 'QR Code' ? 'fas fa-qrcode' : 'fas fa-barcode';
+                const typeClass = result.type === 'QR Code' ? 'success' : 'info';
+
+                html += `
+                    <div class="alert alert-success">
+                        <i class="${typeIcon} me-2"></i>Successfully detected ${result.type}!
+                    </div>
+                `;
+
+                result.books.forEach(book => {
+                    html += `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">${book.title}</h6>
+                                    <span class="badge bg-${typeClass}">
+                                        <i class="${typeIcon} me-1"></i>${result.type}
+                                    </span>
+                                </div>
+                                <p class="card-text">
+                                    <strong>Author:</strong> ${book.author}<br>
+                                    <strong>ISBN:</strong> ${book.isbn || 'Not available'}
+                                    ${book.publisher ? `<br><strong>Publisher:</strong> ${book.publisher}` : ''}
+                                    ${book.language ? `<br><strong>Language:</strong> ${book.language}` : ''}
+                                </p>
+                                <button class="btn btn-danger btn-sm" onclick="useScannedISBN('${book.isbn || ''}', '${book.title}', '${book.author}', '${book.publisher || ''}', '${book.language || 'English'}', '${book.description || ''}')">
+                                    <i class="fas fa-plus me-1"></i>Use This Book
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            document.getElementById('modalResultsDiv').innerHTML = html;
+        }
+
+        function handleScanError(message) {
+            document.getElementById('modalResultsDiv').innerHTML = 
+                `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${message}</div>`;
+        }
+
+        function useScannedISBN(isbn, title, author, publisher, language, description) {
+            // Fill the form with scanned book data
+            document.getElementById('isbn').value = isbn;
+            document.getElementById('title').value = title;
+            document.getElementById('author').value = author;
+            document.getElementById('publisher').value = publisher;
+            document.getElementById('language').value = language;
+            document.getElementById('description').value = description;
+            
+            // Set default copy counts if not already set
+            if (!document.getElementById('copies_total').value) {
+                document.getElementById('copies_total').value = 1;
+            }
+            if (!document.getElementById('copies_available').value) {
+                document.getElementById('copies_available').value = 1;
+            }
+
+            // Close the scanner modal
+            bootstrap.Modal.getInstance(document.getElementById('isbnScannerModal')).hide();
+
+            // Show success message
+            showSuccess('Book information loaded from scanned code!');
+        }
+
+        // QR Code functions (keeping existing functionality)
+        async function generateQR(bookId) {
+            try {
+                const response = await fetch(`/api/qr/${bookId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    currentQRCode = result.qr_code;
+                    document.getElementById('qrCodeContent').innerHTML = 
+                        `<img src="${result.qr_code}" alt="QR Code" class="img-fluid">
+                         <p class="mt-2"><strong>${result.book.title}</strong></p>`;
+                    
+                    new bootstrap.Modal(document.getElementById('qrCodeModal')).show();
+                } else {
+                    showError('Error generating QR code: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                showError('Error generating QR code');
+            }
+        }
+
+        function downloadQRCode() {
+            if (currentQRCode) {
+                const link = document.createElement('a');
+                link.download = 'book-qr-code.png';
+                link.href = currentQRCode;
+                link.click();
+            }
+        }
+
+        function editBook(bookId) {
+            // Load book details and show edit modal
+            loadBookForEdit(bookId);
+        }
+
+        async function loadBookForEdit(bookId) {
+            try {
+                const response = await fetch(`/api/books/${bookId}`);
+                const book = await response.json();
+                
+                if (response.ok) {
+                    // Populate the edit form
+                    document.getElementById('editBookId').value = book.id;
+                    document.getElementById('editIsbn').value = book.isbn || '';
+                    document.getElementById('editTitle').value = book.title || '';
+                    document.getElementById('editAuthor').value = book.author || '';
+                    document.getElementById('editPublisher').value = book.publisher || '';
+                    document.getElementById('editLanguage').value = book.language || '';
+                    document.getElementById('editPages').value = book.pages || '';
+                    document.getElementById('editGenre').value = book.genre || '';
+                    document.getElementById('editLocation').value = book.location || '';
+                    document.getElementById('editDescription').value = book.description || '';
+                    document.getElementById('editCopiesTotal').value = book.copies_total || 1;
+                    document.getElementById('editCopiesAvailable').value = book.copies_available || 0;
+                    document.getElementById('editStatus').value = book.status || 'available';
+                    
+                    // Update book statistics
+                    updateBookStats(book);
+                    
+                    // Clear any previous validation warnings
+                    document.getElementById('editValidationWarnings').innerHTML = '';
+                    
+                    // Show the modal
+                    new bootstrap.Modal(document.getElementById('editBookModal')).show();
+                } else {
+                    showError('Error loading book details: ' + book.message);
+                }
+            } catch (error) {
+                console.error('Error loading book for edit:', error);
+                showError('Error loading book details');
+            }
+        }
+
+        function updateBookStats(book) {
+            const borrowed = book.copies_total - book.copies_available;
+            const statsHtml = `
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h6 class="text-primary">${book.copies_total}</h6>
+                            <small>Total</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h6 class="text-success">${book.copies_available}</h6>
+                            <small>Available</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h6 class="text-warning">${borrowed}</h6>
+                            <small>Borrowed</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>Last Updated:</strong> ${book.last_updated ? new Date(book.last_updated).toLocaleDateString() : 'N/A'}
+                    </small>
+                </div>
+            `;
+            document.getElementById('editBookStats').innerHTML = statsHtml;
+        }
+
+        async function updateBook() {
+            const form = document.getElementById('editBookForm');
+            const formData = new FormData(form);
+            const bookId = formData.get('id');
+            
+            // Debug: Log all form data
+            console.log('Form data entries:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: "${value}"`);
+            }
+            
+            // Validate required fields with better error checking
+            const requiredFields = [
+                { name: 'title', display: 'title' },
+                { name: 'author', display: 'author' },
+                { name: 'copies_total', display: 'total copies' },
+                { name: 'copies_available', display: 'available copies' }
+            ];
+            
+            for (const field of requiredFields) {
+                const value = formData.get(field.name);
+                console.log(`Checking field ${field.name}: "${value}"`);
+                if (!value || value.trim() === '') {
+                    showWarning(`Please fill in the ${field.display} field`);
+                    return;
+                }
+            }
+            
+            // Validate copy counts
+            const totalCopies = parseInt(formData.get('copies_total'));
+            const availableCopies = parseInt(formData.get('copies_available'));
+            
+            console.log(`Total copies: ${totalCopies}, Available copies: ${availableCopies}`);
+            
+            if (isNaN(totalCopies) || totalCopies < 1) {
+                showValidationWarning('Total copies must be at least 1');
+                return;
+            }
+            
+            if (isNaN(availableCopies) || availableCopies < 0) {
+                showValidationWarning('Available copies cannot be negative');
+                return;
+            }
+            
+            if (availableCopies > totalCopies) {
+                showValidationWarning('Available copies cannot exceed total copies');
+                return;
+            }
+            
+            // Convert FormData to JSON
+            const bookData = {};
+            formData.forEach((value, key) => {
+                if (key === 'copies_total' || key === 'copies_available' || key === 'pages') {
+                    bookData[key] = parseInt(value) || 0;
+                } else if (key !== 'id') { // Don't include ID in update data
+                    bookData[key] = value;
+                }
+            });
+            
+            console.log('Book data to send:', bookData);
+            
+            try {
+                const response = await fetch(`/api/books/${bookId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('✅ Book updated successfully!');
+                    
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('editBookModal')).hide();
+                    
+                    // Reload books list
+                    loadBooks(currentPage, currentSearch, currentFilter);
+                } else {
+                    showError('Error updating book: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error updating book:', error);
+                showError('Error updating book');
+            }
+        }
+
+        function showValidationWarning(message) {
+            document.getElementById('editValidationWarnings').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>${message}
+                </div>
+            `;
+        }
+
+        async function refreshBookInfo() {
+            const isbn = document.getElementById('editIsbn').value.trim();
+            if (!isbn) {
+                showWarning('No ISBN available to refresh from');
+                return;
+            }
+            
+            if (!confirm('This will overwrite current book information with data from Google Books. Continue?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/isbn/lookup/${isbn}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const bookInfo = data.book_info;
+                    
+                    // Update form fields (but preserve inventory data)
+                    document.getElementById('editTitle').value = bookInfo.title || '';
+                    document.getElementById('editAuthor').value = bookInfo.author || '';
+                    document.getElementById('editPublisher').value = bookInfo.publisher || '';
+                    document.getElementById('editLanguage').value = bookInfo.language || '';
+                    document.getElementById('editPages').value = bookInfo.pages || bookInfo.pageCount || '';
+                    document.getElementById('editDescription').value = bookInfo.description || '';
+                    
+                    showSuccess('📚 Book information refreshed from Google Books API!');
+                } else {
+                    showError('Could not refresh book information: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error refreshing book info:', error);
+                showError('Error refreshing book information');
+            }
+        }
+
+        // Add validation to copy count fields
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for copy count validation
+            const totalCopiesField = document.getElementById('editCopiesTotal');
+            const availableCopiesField = document.getElementById('editCopiesAvailable');
+            
+            function validateCopyCounts() {
+                const total = parseInt(totalCopiesField.value) || 0;
+                const available = parseInt(availableCopiesField.value) || 0;
+                
+                if (available > total) {
+                    showValidationWarning('Available copies cannot exceed total copies');
+                    availableCopiesField.value = total;
+                } else {
+                    document.getElementById('editValidationWarnings').innerHTML = '';
+                }
+            }
+            
+            if (totalCopiesField && availableCopiesField) {
+                totalCopiesField.addEventListener('change', validateCopyCounts);
+                availableCopiesField.addEventListener('change', validateCopyCounts);
+            }
+        });
+
+        async function deleteBook(bookId) {
+            if (!confirm('Are you sure you want to delete this book?')) return;
+
+            try {
+                const response = await fetch(`/api/books/${bookId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadBooks(currentPage, currentSearch, currentFilter);
+                    showSuccess('Book deleted successfully!');
+                } else {
+                    showError('Error deleting book: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting book:', error);
+                showError('Error deleting book');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchBooks();
+            }
+        });
+
+        // Clean up scanner when modal is hidden
+        document.getElementById('isbnScannerModal').addEventListener('hidden.bs.modal', function() {
+            if (modalScanner) {
+                modalScanner.stop();
+                // Clear results
+                document.getElementById('modalResultsDiv').innerHTML = '';
+            }
+        });
+
+        // Load books on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const search = urlParams.get('search');
+            if (search) {
+                document.getElementById('searchInput').value = search;
+                currentSearch = search;
+            }
+            
+            loadBooks(currentPage, currentSearch, currentFilter);
+        });
+
+        // ISBN Scanner for Add Book Modal
+        let isbnScanner = null;
+
+        // Initialize ISBN scanner when modal is shown
+        document.getElementById('addBookModal').addEventListener('shown.bs.modal', function() {
+            // Ensure copy fields have default values
+            if (!document.getElementById('copies_total').value) {
+                document.getElementById('copies_total').value = 1;
+            }
+            if (!document.getElementById('copies_available').value) {
+                document.getElementById('copies_available').value = 1;
+            }
+            
+            // Initialize ISBN scanner
+            if (!isbnScanner) {
+                isbnScanner = new UniversalScanner({
+                    scanInterval: 2000,
+                    autoStop: true,
+                    onResults: handleIsbnScanResults,
+                    onError: handleIsbnScanError
+                });
+
+                isbnScanner.init({
+                    preview: 'isbnScannerPreview',
+                    toggleBtn: 'startIsbnScannerBtn',
+                    uploadInput: 'isbnImageUpload',
+                    resultsDiv: 'isbnScanResults'
+                });
+            }
+        });
+
+        // Clean up scanner when modal is hidden
+        document.getElementById('addBookModal').addEventListener('hidden.bs.modal', function() {
+            if (isbnScanner) {
+                isbnScanner.stop();
+                // Clear form
+                clearForm();
+            }
+        });
+
+        // Handle ISBN scan results
+        async function handleIsbnScanResults(results) {
+            console.log('ISBN scan results:', results);
+            
+            // Look for ISBN barcode results
+            const isbnResult = results.find(r => r.type === 'ISBN Barcode');
+            
+            if (isbnResult && isbnResult.books && isbnResult.books.length > 0) {
+                const bookInfo = isbnResult.books[0];
+                
+                if (bookInfo.isbn) {
+                    // Show loading message
+                    document.getElementById('isbnScanResults').innerHTML = 
+                        '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Looking up book information...</div>';
+                    
+                    // Fetch detailed book info from Google Books API
+                    await fetchBookInfoFromISBN(bookInfo.isbn);
+                } else {
+                    document.getElementById('isbnScanResults').innerHTML = 
+                        '<div class="alert alert-warning">ISBN detected but no valid book information found</div>';
+                }
+            } else {
+                document.getElementById('isbnScanResults').innerHTML = 
+                    '<div class="alert alert-warning">No ISBN barcode detected. Please try again or enter ISBN manually.</div>';
+            }
+        }
+
+        // Handle ISBN scan errors
+        function handleIsbnScanError(message) {
+            document.getElementById('isbnScanResults').innerHTML = 
+                `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${message}</div>`;
+        }
+
+        // Fetch book info from ISBN
+        async function fetchBookInfoFromISBN(isbn) {
+            try {
+                const response = await fetch(`/api/isbn/lookup/${isbn}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const bookInfo = data.book_info;
+                    
+                    // Fill form with book information
+                    document.getElementById('isbn').value = bookInfo.isbn || isbn;
+                    document.getElementById('title').value = bookInfo.title || '';
+                    document.getElementById('author').value = bookInfo.author || '';
+                    document.getElementById('publisher').value = bookInfo.publisher || '';
+                    document.getElementById('language').value = bookInfo.language || 'English';
+                    document.getElementById('pages').value = bookInfo.pages || bookInfo.pageCount || '';
+                    document.getElementById('description').value = bookInfo.description || '';
+                    
+                    // Handle copy counts
+                    const suggestedCopies = bookInfo.suggested_copies || 1;
+                    document.getElementById('copies_total').value = suggestedCopies;
+                    document.getElementById('copies_available').value = suggestedCopies;
+                    
+                    // Show success message
+                    document.getElementById('isbnScanResults').innerHTML = 
+                        '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>Book information loaded successfully!</div>';
+                    
+                    // Show warning if book already exists
+                    if (bookInfo.existing_in_library) {
+                        const existingBook = bookInfo.existing_book;
+                        document.getElementById('existingBookWarning').classList.remove('d-none');
+                        document.getElementById('existingBookInfo').innerHTML = `
+                            <small>
+                                <strong>Current copies:</strong> ${existingBook.copies_total} total, ${existingBook.copies_available} available<br>
+                                <strong>Location:</strong> ${existingBook.location || 'Not specified'}<br>
+                                <strong>Status:</strong> <span class="badge bg-${existingBook.status === 'available' ? 'success' : 'warning'}">${existingBook.status}</span>
+                            </small>
+                            <div class="mt-2">
+                                <p class="mb-0 text-info">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    The system automatically increased total copies to <strong>${suggestedCopies}</strong> 
+                                    to add this new copy.
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('existingBookWarning').classList.add('d-none');
+                    }
+                    
+                    // Stop scanner after successful scan
+                    isbnScanner.stop();
+                } else {
+                    document.getElementById('isbnScanResults').innerHTML = 
+                        `<div class="alert alert-warning">Book information not found for ISBN: ${isbn}</div>`;
+                }
+            } catch (error) {
+                console.error('Error fetching book info:', error);
+                document.getElementById('isbnScanResults').innerHTML = 
+                    '<div class="alert alert-danger">Error fetching book information</div>';
+            }
+        }
+
+        // Manual ISBN entry
+        function manualIsbnEntry() {
+            // Clear previous input and validation
+            document.getElementById('manualIsbnInput').value = '';
+            document.getElementById('isbnValidation').innerHTML = '';
+            document.getElementById('processIsbnBtn').disabled = true;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('manualIsbnModal'));
+            modal.show();
+            
+            // Focus on input after modal is shown
+            document.getElementById('manualIsbnModal').addEventListener('shown.bs.modal', function() {
+                document.getElementById('manualIsbnInput').focus();
+            }, { once: true });
+        }
+
+        // Process manual ISBN entry
+        async function processManualIsbn() {
+            const isbn = document.getElementById('manualIsbnInput').value.trim();
+            if (!isbn) return;
+            
+            // Validate ISBN format
+            const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
+            if (cleanIsbn.length !== 10 && cleanIsbn.length !== 13) {
+                document.getElementById('isbnValidation').innerHTML = 
+                    '<div class="alert alert-danger"><i class="fas fa-times-circle me-2"></i>Invalid ISBN format. Please enter a 10 or 13 digit ISBN.</div>';
+                return;
+            }
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('manualIsbnModal'));
+            modal.hide();
+            
+            // Show loading in results area
+            document.getElementById('isbnScanResults').innerHTML = 
+                '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Looking up book information for ISBN: ' + cleanIsbn + '</div>';
+            
+            await fetchBookInfoFromISBN(cleanIsbn);
+        }
+
+        // Real-time ISBN validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const isbnInput = document.getElementById('manualIsbnInput');
+            const processBtn = document.getElementById('processIsbnBtn');
+            const validationDiv = document.getElementById('isbnValidation');
+            
+            isbnInput.addEventListener('input', function() {
+                const isbn = this.value.trim();
+                const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
+                
+                if (isbn === '') {
+                    validationDiv.innerHTML = '';
+                    processBtn.disabled = true;
+                    return;
+                }
+                
+                if (cleanIsbn.length === 10 || cleanIsbn.length === 13) {
+                    validationDiv.innerHTML = 
+                        '<div class="alert alert-success alert-sm"><i class="fas fa-check-circle me-2"></i>Valid ISBN format</div>';
+                    processBtn.disabled = false;
+                } else {
+                    validationDiv.innerHTML = 
+                        '<div class="alert alert-warning alert-sm"><i class="fas fa-exclamation-triangle me-2"></i>ISBN must be 10 or 13 digits</div>';
+                    processBtn.disabled = true;
+                }
+            });
+            
+            // Handle Enter key
+            isbnInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !processBtn.disabled) {
+                    processManualIsbn();
+                }
+            });
+        });
+
+        // Clear form
+        function clearForm() {
+            document.getElementById('addBookForm').reset();
+            document.getElementById('isbn').value = '';
+            document.getElementById('copies_total').value = '1';
+            document.getElementById('copies_available').value = '1';
+            document.getElementById('language').value = 'English';
+            document.getElementById('isbnScanResults').innerHTML = '';
+            document.getElementById('existingBookWarning').classList.add('d-none');
+        }
+
+        // Save book
+        async function saveBook() {
+            const form = document.getElementById('addBookForm');
+            const formData = new FormData(form);
+            
+            // Debug: Log all form data
+            console.log('Form data entries:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: "${value}"`);
+            }
+            
+            // Validate required fields
+            const requiredFields = ['title', 'author'];
+            for (const field of requiredFields) {
+                const value = formData.get(field);
+                console.log(`Checking field ${field}: "${value}"`);
+                if (!value || value.trim() === '') {
+                    showWarning(`Please fill in the ${field.replace('_', ' ')} field`);
+                    return;
+                }
+            }
+            
+            // Validate numeric fields - get values directly from elements as fallback
+            let totalCopies = parseInt(formData.get('copies_total'));
+            let availableCopies = parseInt(formData.get('copies_available'));
+            
+            // Fallback to direct element values if FormData fails
+            if (isNaN(totalCopies)) {
+                totalCopies = parseInt(document.getElementById('copies_total').value) || 0;
+            }
+            if (isNaN(availableCopies)) {
+                availableCopies = parseInt(document.getElementById('copies_available').value) || 0;
+            }
+            
+            console.log(`Total copies: ${totalCopies}, Available copies: ${availableCopies}`);
+            
+            if (totalCopies < 1) {
+                showWarning('Please enter a valid number for total copies (minimum 1)');
+                return;
+            }
+            
+            if (availableCopies < 0) {
+                showWarning('Please enter a valid number for available copies (minimum 0)');
+                return;
+            }
+            
+            if (availableCopies > totalCopies) {
+                showWarning('Available copies cannot exceed total copies');
+                return;
+            }
+            
+            // Convert FormData to JSON
+            const bookData = {};
+            formData.forEach((value, key) => {
+                if (key === 'copies_total' || key === 'copies_available' || key === 'pages') {
+                    bookData[key] = parseInt(value) || 0;
+                } else {
+                    bookData[key] = value;
+                }
+            });
+            
+            // Ensure the corrected values are used
+            bookData.copies_total = totalCopies;
+            bookData.copies_available = availableCopies;
+            
+            try {
+                const response = await fetch('/api/books', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Different messages based on action type
+                    if (result.action === 'updated_existing') {
+                        showSuccess(`${result.message}\n\n📚 Book details updated in library.`);
+                    } else if (result.action === 'created_new') {
+                        showSuccess(`${result.message}\n\n📚 New book added to library!`);
+                    } else {
+                        showSuccess(result.message);
+                    }
+                    
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('addBookModal')).hide();
+                    
+                    // Reload books list
+                    loadBooks(currentPage, currentSearch, currentFilter);
+                    
+                    // Clear form
+                    clearForm();
+                } else {
+                    showError('Error adding book: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error saving book:', error);
+                showError('Error saving book');
+            }
+        }
+    </script>
+{% endblock %}
