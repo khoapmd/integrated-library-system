@@ -5,8 +5,8 @@ Simple test script to start the Flask server without SSL complications
 import sys
 import os
 
-# Add the current directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the parent directory to Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..') if '__file__' in globals() else '..')
 
 from app import app, db
 

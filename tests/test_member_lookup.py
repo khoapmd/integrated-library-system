@@ -4,6 +4,12 @@ Test member lookup by employee code
 This script tests if we can find members by their employee codes from company QR cards.
 """
 
+import os
+import sys
+
+# Add parent directory to path to import modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..') if '__file__' in globals() else '..')
+
 from models import db, Member
 from app import app
 import json
