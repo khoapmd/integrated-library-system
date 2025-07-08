@@ -4,7 +4,7 @@ This folder contains all test files for the Library Management System.
 
 ## Test Files
 
-- `test_app.py` - Main application tests
+- `test_app.py` - Main application tests ✅ (8 tests passing)
 - `test_circulation_scanner.py` - Circulation and scanner functionality tests
 - `test_edit_member.py` - Member editing functionality tests
 - `test_member_lookup.py` - Member lookup functionality tests
@@ -40,6 +40,13 @@ python tests/test_member_lookup.py
 python tests/test_server.py
 ```
 
+## Test Status
+
+✅ **test_app.py**: All 8 tests passing
+- Database isolation fixed with unique ISBNs and member IDs
+- Proper session management implemented
+- DetachedInstanceError resolved
+
 ## Test Dependencies
 
 Make sure you have the following packages installed for running tests:
@@ -50,7 +57,8 @@ pip install pytest pytest-cov
 ## Notes
 
 - All tests should be run from the root directory of the project
-- Make sure the application is not running when executing tests to avoid database conflicts
-- Some tests may require a test database to be set up
-- The tests use an in-memory SQLite database for isolation
-- If tests fail due to database conflicts, ensure no other instances of the app are running
+- Tests use isolated in-memory SQLite databases for each test method
+- Unique test data is generated to avoid constraint violations
+- Database cleanup is performed after each test
+- If you see deprecation warnings, they are from SQLAlchemy and don't affect test results
+- The tests validate API endpoints, database operations, and business logic
