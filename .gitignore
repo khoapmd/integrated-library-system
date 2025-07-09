@@ -6,10 +6,15 @@
 *.p12
 *.pfx
 
+# Docker
+docker-compose.override.yml
+.docker/
+
 # Environment variables and configuration
 .env
 .env.local
 .env.production
+.env.development
 config.ini
 secrets.json
 
@@ -18,6 +23,16 @@ secrets.json
 *.sqlite
 *.sqlite3
 instance/
+
+# Member cards and uploads
+member_cards/*.png
+member_cards/*.jpg
+uploads/
+
+# Temporary test files
+temp_*
+test_*.png
+test_*.jpg
 
 # Python
 __pycache__/

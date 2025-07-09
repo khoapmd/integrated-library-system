@@ -78,12 +78,12 @@ python -c "from app import app, db; app.app_context().push(); db.create_all()"
 
 ### 3. Add Sample Data (Optional)
 ```bash
-python init_db.py
+python scripts/init_db.py
 ```
 
 ### 4. Run Application
 ```bash
-python app.py
+python main.py
 ```
 
 ### 5. Access System

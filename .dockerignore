@@ -1,0 +1,61 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Documentation (optional, remove if you want docs in container)
+docs/
+
+# Development files
+.env
+.env.local
+.env.development
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Database (will be created in container)
+instance/library.db
+
+# SSL certificates (will be generated in container if needed)
+cert.pem
+key.pem
+
+# Windows batch files
+*.bat
+
+# Temporary files
+*.tmp
+*.temp

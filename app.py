@@ -2,19 +2,27 @@ from flask import Flask, request, jsonify, render_template, send_file, redirect,
 from flask_cors import CORS
 from models import db, Book, Member, Transaction
 from utils import QRCodeManager, ISBNScanner, generate_member_id, calculate_fine
+from config import config, Config
 import os
 import io
 from datetime import datetime, timedelta
 import json
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Create Flask app with proper configuration
+def create_app(config_name='default'):
+    app = Flask(__name__)
+    
+    # Load configuration
+    app.config.from_object(config[config_name])
+    
+    # Initialize extensions
+    db.init_app(app)
+    CORS(app)
+    
+    return app
 
-# Initialize extensions
-db.init_app(app)
-CORS(app)
+# Create app instance
+app = create_app(os.environ.get('FLASK_ENV', 'default'))
 
 # Initialize utilities
 qr_manager = QRCodeManager()
@@ -1071,25 +1079,11 @@ def get_recent_transactions():
         }), 400
 
 if __name__ == '__main__':
+    # For development only - use main.py for production
+    print("⚠️  For production use, run: python main.py")
+    print("🔧 Development server starting...")
+    
     with app.app_context():
         db.create_all()
     
-    # SSL context for HTTPS (development only)
-    import ssl
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.load_cert_chain('cert.pem', 'key.pem')
-    
-    # Check if running with HTTPS flag
-    import sys
-    use_https = '--https' in sys.argv
-    
-    if use_https:
-        print("Starting Flask app with HTTPS...")
-        print("Access the app at: https://localhost:5000")
-        print("Note: You may need to accept the self-signed certificate warning in your browser")
-        app.run(debug=True, host='0.0.0.0', port=5000, ssl_context=ssl_context)
-    else:
-        print("Starting Flask app with HTTP...")
-        print("Access the app at: http://localhost:5000")
-        print("To use HTTPS, run with: python app.py --https")
-        app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
