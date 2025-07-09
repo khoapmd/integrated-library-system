@@ -105,7 +105,15 @@ class QRCodeManager:
 
 class ISBNScanner:
     def __init__(self):
-        self.services = ['goob', 'openl', 'worldcat']  # ISBN service providers
+        # Import config to get ISBN services
+        try:
+            from config import Config
+            self.services = Config.ISBN_SERVICES
+        except ImportError:
+            # Fallback if config import fails
+            self.services = ['goob', 'openl', 'worldcat']  # ISBN service providers
+        
+        print(f"ISBN Scanner initialized with services: {self.services}")
         
         # Configure requests session with SSL verification disabled for development
         self.session = requests.Session()
@@ -172,19 +180,36 @@ class ISBNScanner:
             return False
     
     def get_book_info_by_isbn(self, isbn):
-        """Get book information from ISBN"""
+        """Get book information from ISBN with fallback through multiple services"""
         try:
             # Clean the ISBN
             isbn_clean = isbnlib.clean(isbn)
             print(f"Looking up ISBN: {isbn_clean}")
             
-            # First try to get basic metadata from isbnlib
+            # Try each service in order until one succeeds
             book_info = None
-            try:
-                book_info = meta(isbn_clean, service='default')
-                print(f"isbnlib metadata: {book_info}")
-            except Exception as e:
-                print(f"isbnlib error: {e}")
+            for service in self.services:
+                try:
+                    print(f"Trying ISBN service: {service}")
+                    book_info = meta(isbn_clean, service=service)
+                    if book_info:
+                        print(f"✅ Successfully found metadata using service: {service}")
+                        print(f"Book info: {book_info}")
+                        break
+                except Exception as e:
+                    print(f"❌ Service '{service}' failed: {e}")
+                    continue
+            
+            # If no service worked, try with default service as final attempt
+            if not book_info:
+                try:
+                    print("Trying default service as final attempt...")
+                    book_info = meta(isbn_clean, service='default')
+                    if book_info:
+                        print(f"✅ Successfully found metadata using default service")
+                        print(f"Book info: {book_info}")
+                except Exception as e:
+                    print(f"❌ Default service also failed: {e}")
             
             if book_info:
                 # Get cover image URL
@@ -224,8 +249,8 @@ class ISBNScanner:
                     'source': 'api_lookup'
                 }
             else:
-                # If no metadata found, try Google Books directly
-                print(f"No isbnlib metadata found, trying Google Books API directly...")
+                # If no metadata found from any isbnlib service, try Google Books directly
+                print(f"❌ No metadata found from any isbnlib service, trying Google Books API directly...")
                 try:
                     url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn_clean}"
                     response = self.session.get(url, timeout=self.timeout)
@@ -244,6 +269,7 @@ class ISBNScanner:
                                 if len(description) > 500:
                                     description = description[:500] + "..."
                             
+                            print(f"✅ Successfully found book info via Google Books API")
                             return {
                                 'isbn': isbn_clean,
                                 'title': volume_info.get('title', f'Book {isbn_clean}'),
@@ -255,13 +281,23 @@ class ISBNScanner:
                                 'description': description,
                                 'cover_url': volume_info.get('imageLinks', {}).get('thumbnail'),
                                 'pages': volume_info.get('pageCount'),
-                                'source': 'google_books'
+                                'source': 'google_books_fallback'
                             }
                 except Exception as e:
-                    print(f"Google Books API error: {e}")
+                    print(f"❌ Google Books API error: {e}")
+                
+                # Try Open Library as final fallback
+                print(f"Trying Open Library as final fallback...")
+                try:
+                    open_library_data = self._get_full_book_info_from_open_library(isbn_clean)
+                    if open_library_data:
+                        print(f"✅ Successfully found book info via Open Library")
+                        return open_library_data
+                except Exception as e:
+                    print(f"❌ Open Library error: {e}")
                 
                 # If all external lookups fail, return basic info
-                print(f"All API lookups failed, returning basic info for ISBN: {isbn_clean}")
+                print(f"❌ All API lookups failed, returning basic info for ISBN: {isbn_clean}")
                 return {
                     'isbn': isbn_clean,
                     'title': f'Book {isbn_clean}',
@@ -352,6 +388,79 @@ class ISBNScanner:
             return None
         except Exception as e:
             print(f"Error fetching description from Open Library for ISBN {isbn}: {e}")
+            return None
+
+    def _get_full_book_info_from_open_library(self, isbn):
+        """Get complete book information from Open Library API as fallback"""
+        try:
+            url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
+            response = self.session.get(url, timeout=self.timeout)
+            
+            if response.status_code == 200:
+                data = response.json()
+                book_key = f"ISBN:{isbn}"
+                
+                if book_key in data:
+                    book_data = data[book_key]
+                    
+                    # Extract title
+                    title = book_data.get('title', f'Book {isbn}')
+                    
+                    # Extract authors
+                    authors = []
+                    if 'authors' in book_data:
+                        for author in book_data['authors']:
+                            if isinstance(author, dict) and 'name' in author:
+                                authors.append(author['name'])
+                            elif isinstance(author, str):
+                                authors.append(author)
+                    
+                    # Extract publisher
+                    publisher = 'Unknown Publisher'
+                    if 'publishers' in book_data and book_data['publishers']:
+                        publisher = book_data['publishers'][0].get('name', 'Unknown Publisher')
+                    
+                    # Extract publication date
+                    pub_date = book_data.get('publish_date', '')
+                    
+                    # Extract description
+                    description = (
+                        book_data.get('description', {}).get('value') if isinstance(book_data.get('description'), dict) else
+                        book_data.get('description') if isinstance(book_data.get('description'), str) else
+                        book_data.get('excerpts', [{}])[0].get('text', '') if book_data.get('excerpts') else
+                        f'Book with ISBN {isbn} from Open Library'
+                    )
+                    
+                    if description and isinstance(description, str):
+                        description = description.strip()
+                        if len(description) > 500:
+                            description = description[:500] + "..."
+                    
+                    # Extract cover image
+                    cover_url = None
+                    if 'cover' in book_data:
+                        cover_url = book_data['cover'].get('medium') or book_data['cover'].get('small')
+                    
+                    # Extract page count
+                    pages = book_data.get('number_of_pages')
+                    
+                    return {
+                        'isbn': isbn,
+                        'title': title,
+                        'authors': authors,
+                        'author': ', '.join(authors) if authors else 'Unknown Author',
+                        'publisher': publisher,
+                        'publication_date': pub_date,
+                        'language': book_data.get('languages', [{}])[0].get('key', 'en').replace('/languages/', ''),
+                        'description': description,
+                        'cover_url': cover_url,
+                        'pages': pages,
+                        'pageCount': pages,
+                        'source': 'open_library_fallback'
+                    }
+            return None
+        except Exception as e:
+            print(f"Error fetching full book info from Open Library for ISBN {isbn}: {e}")
             return None
 
     def search_books_by_isbn(self, isbn_list):
