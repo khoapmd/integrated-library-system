@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # PostgreSQL Database
-  db:
+  library-db:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-library}
@@ -50,7 +50,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-libraryuser}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change-this-password}
     depends_on:
-      db:
+      library-db:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
