@@ -9,7 +9,7 @@ max_retries=30
 retry_count=0
 
 while [ $retry_count -lt $max_retries ]; do
-    if python -c "from app import app, db; app.app_context().push(); db.session.execute('SELECT 1'); print('✅ Database connection successful')"; then
+    if python -c "from app import app, db; from sqlalchemy import text; app.app_context().push(); db.session.execute(text('SELECT 1')); print('✅ Database connection successful')"; then
         break
     else
         retry_count=$((retry_count + 1))
