@@ -15,28 +15,31 @@
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-header">
-                        <h4><i class="fas fa-qrcode me-2"></i>QR Code Scanner - Check In/Out</h4>
+                        <h4 id="scannerModeIndicator">
+                            <i class="fas fa-qrcode me-2"></i>Book Scanner - Check In/Out
+                        </h4>
+                        <small class="text-muted">Scanner for book QR codes and barcodes</small>
                     </div>
                     <div class="card-body">
                         <!-- Scanner Preview -->
-                        <div class="scanner-preview mb-3" id="circulationCameraPreview">
+                        <div class="scanner-preview mb-3" id="unifiedScannerPreview">
                             <div class="text-center text-muted">
                                 <i class="fas fa-qrcode fa-3x"></i>
-                                <p class="mt-2">QR Scanner will appear here</p>
-                                <small>Scan book QR code for check-in/check-out</small>
+                                <p class="mt-2">Book Scanner</p>
+                                <small>Scan book QR codes and ISBN barcodes</small>
                             </div>
                         </div>
                         
                         <!-- Scanner Controls -->
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <button id="startScannerBtn" class="btn btn-danger w-100">
-                                    <i class="fas fa-camera me-2"></i>Start QR Scanner
+                                <button id="bookScannerBtn" class="btn btn-danger w-100">
+                                    <i class="fas fa-qrcode me-2"></i>Scan Book QR/Barcode
                                 </button>
                             </div>
                             <div class="col-md-6">
-                                <button class="btn btn-outline-danger w-100" onclick="manualEntry()">
-                                    <i class="fas fa-keyboard me-2"></i>Manual Entry
+                                <button class="btn btn-outline-secondary w-100" onclick="manualEntry()">
+                                    <i class="fas fa-keyboard me-2"></i>Manual Book Entry
                                 </button>
                             </div>
                         </div>
@@ -61,24 +64,20 @@
                         
                         <!-- Member Selection (for checkout) -->
                         <div id="memberSelection" class="mb-3">
-                            <label for="memberSelect" class="form-label">Select Member:</label>
+                            <label for="memberCodeInput" class="form-label">Member Code/ID:</label>
                             <div class="input-group">
-                                <select id="memberSelect" class="form-select">
-                                    <option value="">Loading members...</option>
-                                </select>
-                                <button class="btn btn-outline-danger" type="button" onclick="scanMemberCard()">
-                                    <i class="fas fa-id-card me-1"></i>Scan Member Card
+                                <input type="text" class="form-control" id="memberCodeInput" placeholder="Enter member ID or employee code" onkeyup="handleMemberCodeInput(event)">
+                                <button class="btn btn-outline-primary" type="button" onclick="lookupMemberCode()">
+                                    <i class="fas fa-search me-1"></i>Lookup
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearMemberSelection()">
+                                    <i class="fas fa-times me-1"></i>Clear
                                 </button>
                             </div>
+                            <small class="form-text text-muted">Enter member ID or employee code and press Enter or click Lookup</small>
+                            
                             <div id="selectedMemberInfo" class="mt-2" style="display: none;">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-user-check me-2"></i>
-                                    <strong>Selected Member:</strong>
-                                    <span id="selectedMemberName"></span>
-                                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="clearSelectedMember()">
-                                        <i class="fas fa-times"></i> Clear
-                                    </button>
-                                </div>
+                                <!-- This will be populated by JavaScript with comprehensive member details -->
                             </div>
                         </div>
                         
@@ -188,6 +187,7 @@
             </div>
         </div>
     </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -199,8 +199,9 @@
     <script src="{{ url_for('static', filename='js/scanner-module.js') }}?v=20250707-104500"></script>
     
     <script>
-        let circulationScanner = null;
+        let bookScanner = null;
         let members = [];
+        let selectedMember = null;
 
         // Helper function to safely show toast notifications
         function safeToast(type, message) {
@@ -237,6 +238,353 @@
             }
         }
 
+        // Main page initialization - removed duplicate
+
+        // Initialize book scanner
+        function initializeBookScanner() {
+            bookScanner = new UniversalScanner({
+                scanInterval: 1000,
+                autoStop: true,
+                onResults: handleBookScanResults,
+                onError: handleBookScanError
+            });
+
+            bookScanner.init({
+                preview: 'unifiedScannerPreview',
+                toggleBtn: 'bookScannerBtn',
+                statusDiv: 'circulationResults',
+                resultsDiv: 'circulationResults'
+            });
+
+            console.log('📚 [CIRCULATION] Book scanner initialized');
+        }
+
+        // Book scanner result handlers
+        function handleBookScanResults(results) {
+            console.log('📚 [BOOK SCAN] Processing book scan results:', results);
+            
+            if (results && results.length > 0) {
+                // Check for book QR codes
+                const qrResult = results.find(r => r.type === 'QR Code');
+                
+                if (qrResult && qrResult.books && qrResult.books.length > 0) {
+                    const book = qrResult.books[0];
+                    
+                    if (book.uuid) {
+                        console.log('✅ [BOOK SCAN] Processing book UUID:', book.uuid);
+                        processCirculation(book.uuid);
+                        return;
+                    }
+                }
+                
+                // Check for ISBN barcodes
+                const barcodeResult = results.find(r => r.type === 'ISBN Barcode');
+                if (barcodeResult && barcodeResult.books && barcodeResult.books.length > 0) {
+                    const book = barcodeResult.books[0];
+                    console.log('📖 [BOOK SCAN] Processing ISBN book:', book);
+                    handleISBNBook(book);
+                    return;
+                }
+                
+                // Check raw data for book UUIDs
+                for (const result of results) {
+                    if (result.rawData) {
+                        try {
+                            const jsonData = JSON.parse(result.rawData);
+                            if (jsonData.uuid || jsonData.bookId || jsonData.book_id) {
+                                const bookUuid = jsonData.uuid || jsonData.bookId || jsonData.book_id;
+                                console.log('📚 [BOOK SCAN] Book UUID from JSON:', bookUuid);
+                                processCirculation(bookUuid);
+                                return;
+                            }
+                        } catch (e) {
+                            // Check for UUID pattern in raw text
+                            if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result.rawData.trim())) {
+                                console.log('📚 [BOOK SCAN] UUID pattern detected:', result.rawData);
+                                processCirculation(result.rawData.trim());
+                                return;
+                            }
+                        }
+                    }
+                }
+                
+                safeToast('showError', 'No valid book data found in scanned code');
+            } else {
+                safeToast('showError', 'No book QR code or barcode detected');
+            }
+        }
+
+        function handleBookScanError(message) {
+            console.error('🚨 [BOOK SCAN] Scanner error:', message);
+            safeToast('showError', `Book Scanner Error: ${message}`);
+        }
+
+        // Member code input functionality
+        function handleMemberCodeInput(event) {
+            if (event.key === 'Enter') {
+                lookupMemberCode();
+            }
+        }
+
+        async function lookupMemberCode() {
+            const memberCodeInput = document.getElementById('memberCodeInput');
+            const memberCode = memberCodeInput.value.trim();
+            
+            if (!memberCode) {
+                safeToast('showWarning', 'Please enter a member code or ID');
+                return;
+            }
+            
+            console.log('👤 [MEMBER LOOKUP] Looking up member code:', memberCode);
+            
+            try {
+                // Try to find member by various identifiers
+                const member = findMemberByCode(memberCode);
+                
+                if (member) {
+                    selectMember(member);
+                    safeToast('showSuccess', `Member found: ${member.first_name} ${member.last_name}`);
+                } else {
+                    // Try API lookup if not found locally
+                    await lookupMemberFromAPI(memberCode);
+                }
+            } catch (error) {
+                console.error('❌ [MEMBER LOOKUP] Error:', error);
+                safeToast('showError', 'Error looking up member');
+            }
+        }
+
+        function findMemberByCode(memberCode) {
+            return members.find(m => 
+                m.member_id === memberCode ||
+                m.employee_code === memberCode ||
+                m.employee_number === memberCode ||
+                String(m.id) === memberCode ||
+                m.email === memberCode
+            );
+        }
+
+        async function lookupMemberFromAPI(memberCode) {
+            try {
+                // Try employee code lookup first
+                let response = await fetch(`/api/members/employee/${memberCode}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.member) {
+                        selectMember(data.member);
+                        safeToast('showSuccess', `Member found: ${data.member.first_name} ${data.member.last_name}`);
+                        return;
+                    }
+                }
+                
+                // Try member lookup by QR scan endpoint
+                response = await fetch('/api/scan/member-qr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        qr_data: memberCode
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.member) {
+                        selectMember(data.member);
+                        safeToast('showSuccess', `Member found: ${data.member.first_name} ${data.member.last_name}`);
+                        return;
+                    }
+                }
+                
+                // Member not found
+                safeToast('showWarning', `Member with code "${memberCode}" not found in system. Please check the code or add the member first.`);
+                
+            } catch (error) {
+                console.error('❌ [MEMBER API] Error:', error);
+                safeToast('showError', 'Error looking up member from server');
+            }
+        }
+
+        function selectMember(member) {
+            selectedMember = member;
+            
+            // Update UI to show selected member
+            const selectedMemberInfo = document.getElementById('selectedMemberInfo');
+            
+            if (selectedMemberInfo) {
+                selectedMemberInfo.innerHTML = `
+                    <div class="alert alert-success">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-user-check me-2"></i>
+                                    <strong>Member Selected</strong>
+                                    <span class="badge bg-success ms-2">
+                                        <i class="fas fa-search me-1"></i>Manual Lookup
+                                    </span>
+                                </h6>
+                                
+                                <div class="member-info-list">
+                                    <p class="mb-2"><strong><i class="fas fa-user me-2"></i>Name:</strong>
+                                    ${member.first_name} ${member.last_name}</p>
+                                    
+                                    <p class="mb-2"><strong><i class="fas fa-id-card me-2"></i>Member ID:</strong>
+                                    ${member.member_id}</p>
+                                    
+                                    ${member.employee_code ? `<p class="mb-2"><strong><i class="fas fa-id-badge me-2"></i>Employee Code:</strong> ${member.employee_code}</p>` : ''}
+                                    
+                                    ${member.employee_number ? `<p class="mb-2"><strong><i class="fas fa-hashtag me-2"></i>Employee Number:</strong> ${member.employee_number}</p>` : ''}
+                                    
+                                    ${member.email ? `<p class="mb-2"><strong><i class="fas fa-envelope me-2"></i>Email:</strong> <a href="mailto:${member.email}" class="text-decoration-none">${member.email}</a></p>` : ''}
+                                    
+                                    ${member.phone ? `<p class="mb-2"><strong><i class="fas fa-phone me-2"></i>Phone:</strong> <a href="tel:${member.phone}" class="text-decoration-none">${member.phone}</a></p>` : ''}
+                                    
+                                    ${member.department ? `<p class="mb-2"><strong><i class="fas fa-building me-2"></i>Department:</strong> ${member.department}</p>` : ''}
+                                    
+                                    ${member.position ? `<p class="mb-2"><strong><i class="fas fa-briefcase me-2"></i>Position:</strong> ${member.position}</p>` : ''}
+                                </div>
+                                
+                                ${member.address ? `
+                                    <div class="mt-2">
+                                        <p class="mb-2"><strong><i class="fas fa-map-marker-alt me-2"></i>Address:</strong><br>
+                                        ${member.address}${member.city ? `, ${member.city}` : ''}${member.state ? `, ${member.state}` : ''}${member.zip_code ? ` ${member.zip_code}` : ''}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                ${member.member_type || member.membership_type ? `
+                                    <div class="mt-2">
+                                        <span class="badge bg-info me-2">
+                                            <i class="fas fa-tag me-1"></i>${member.member_type || member.membership_type}
+                                        </span>
+                                ` : ''}
+                                ${member.status ? `
+                                        <span class="badge ${member.status === 'active' ? 'bg-success' : member.status === 'inactive' ? 'bg-warning' : 'bg-secondary'} me-2">
+                                            <i class="fas fa-circle me-1"></i>${member.status.charAt(0).toUpperCase() + member.status.slice(1)}
+                                        </span>
+                                ` : ''}
+                                ${member.join_date || member.membership_date ? `
+                                        <span class="badge bg-light text-dark me-2">
+                                            <i class="fas fa-calendar me-1"></i>Joined: ${new Date(member.join_date || member.membership_date).toLocaleDateString()}
+                                        </span>
+                                ` : ''}
+                                ${member.max_books ? `
+                                        <span class="badge bg-secondary me-2">
+                                            <i class="fas fa-book me-1"></i>Max Books: ${member.max_books}
+                                        </span>
+                                ` : ''}
+                                ${member.member_type || member.membership_type || member.status || member.join_date || member.membership_date || member.max_books ? '</div>' : ''}
+                                
+                                ${member.notes ? `
+                                    <div class="mt-3">
+                                        <p class="mb-1"><strong><i class="fas fa-sticky-note me-2"></i>Notes:</strong></p>
+                                        <div class="bg-light p-2 rounded">
+                                            <small>${member.notes}</small>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-sm btn-outline-secondary mb-2" onclick="clearSelectedMember()">
+                                    <i class="fas fa-times me-1"></i> Clear Selection
+                                </button>
+                                <br>
+                                <button class="btn btn-sm btn-outline-info mb-2" onclick="viewMemberHistory('${member.id}')">
+                                    <i class="fas fa-history me-1"></i> View History
+                                </button>
+                                <br>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editMember('${member.id}')">
+                                    <i class="fas fa-edit me-1"></i> Edit Member
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                selectedMemberInfo.style.display = 'block';
+            }
+            
+            console.log('✅ [MEMBER SELECT] Member selected:', member);
+        }
+
+        function clearSelectedMember() {
+            selectedMember = null;
+            document.getElementById('memberCodeInput').value = '';
+            
+            const selectedMemberInfo = document.getElementById('selectedMemberInfo');
+            if (selectedMemberInfo) {
+                selectedMemberInfo.style.display = 'none';
+            }
+            
+            console.log('🗑️ [MEMBER CLEAR] Member selection cleared');
+        }
+
+        function clearMemberSelection() {
+            clearSelectedMember();
+        }
+
+        function handleISBNBook(book) {
+            console.log('📖 [ISBN HANDLER] Processing ISBN book:', book);
+            
+            // Show the detected book info and options to add it
+            const resultsDiv = document.getElementById('circulationResults');
+            if (resultsDiv) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-book me-2"></i>ISBN Book Detected</h6>
+                        <p><strong>Title:</strong> ${book.title || 'Unknown'}</p>
+                        <p><strong>Author:</strong> ${book.author || 'Unknown'}</p>
+                        <p><strong>ISBN:</strong> ${book.isbn}</p>
+                        <div class="mt-3">
+                            <button class="btn btn-primary me-2" onclick="addBookToLibrary('${book.isbn}')">
+                                <i class="fas fa-plus me-1"></i>Add to Library
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearResults()">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Helper functions
+        function clearResults() {
+            const resultsDiv = document.getElementById('circulationResults');
+            if (resultsDiv) {
+                resultsDiv.innerHTML = '';
+            }
+        }
+
+        async function addBookToLibrary(isbn) {
+            try {
+                const response = await fetch('/api/books/add-isbn', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isbn })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    safeToast('showSuccess', `Book added to library: ${data.book.title}`);
+                    clearResults();
+                    
+                    // Process circulation with the new book
+                    if (data.book.uuid) {
+                        processCirculation(data.book.uuid);
+                    }
+                } else {
+                    safeToast('showError', `Failed to add book: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error adding book to library:', error);
+                safeToast('showError', 'Error adding book to library');
+            }
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 [CIRCULATION] Circulation page initialized');
@@ -254,25 +602,46 @@
                 showWarning: typeof window.showWarning
             });
             
-            // Initialize scanner
-            circulationScanner = new UniversalScanner({
-                scanInterval: 1000, // Faster scanning for QR codes
-                autoStop: true,
-                onResults: handleScanResults,
-                onError: handleScanError
-            });
+            // Initialize unified scanner (fallback to basic scanner)
+            async function initializeUnifiedScanner() {
+                try {
+                    if (typeof UnifiedScannerManager !== 'undefined') {
+                        unifiedScanner = new UnifiedScannerManager({
+                            scanInterval: 1000,
+                            debug: true,
+                            onResults: handleUnifiedScanResults,
+                            onError: handleUnifiedScanError,
+                            onModeChange: handleModeChange
+                        });
 
-            circulationScanner.init({
-                preview: 'circulationCameraPreview',
-                toggleBtn: 'startScannerBtn',
-                resultsDiv: 'circulationResults'
-            });
+                        await unifiedScanner.init({
+                            preview: 'unifiedScannerPreview',
+                            bookToggleBtn: 'bookScannerBtn',
+                            modeIndicator: 'scannerModeIndicator'
+                        });
 
-            console.log('📱 [CIRCULATION] Scanner initialized');
+                        console.log('🎯 [CIRCULATION] Unified scanner initialized');
+                        
+                        // Set global reference
+                        window.unifiedScanner = unifiedScanner;
+                        console.log('🌐 [CIRCULATION] Global unified scanner reference set');
+                    } else {
+                        console.warn('⚠️ [CIRCULATION] UnifiedScannerManager not available, using fallback');
+                        // Fallback to basic scanner initialization
+                        initializeBookScanner();
+                    }
+                } catch (error) {
+                    console.error('❌ [CIRCULATION] Failed to initialize unified scanner, using fallback:', error);
+                    // Fallback to basic scanner initialization
+                    initializeBookScanner();
+                }
+            }
             
-            // Set global reference for scanner module buttons
-            window.universalScanner = circulationScanner;
-            console.log('🌐 [CIRCULATION] Global universalScanner reference set:', !!window.universalScanner);
+            // Initialize the scanner
+            initializeUnifiedScanner().catch(error => {
+                console.error('❌ [CIRCULATION] Failed to initialize unified scanner, using fallback:', error);
+                initializeBookScanner();
+            });
 
             // Check if toast system becomes available after a delay
             setTimeout(() => {
@@ -330,6 +699,11 @@
         // Update member select dropdown
         function updateMemberSelect() {
             const select = document.getElementById('memberSelect');
+            if (!select) {
+                console.warn('⚠️ [CIRCULATION] memberSelect element not found, skipping dropdown update');
+                return;
+            }
+            
             select.innerHTML = '<option value="">Select a member...</option>';
             
             members.forEach(member => {
@@ -342,12 +716,94 @@
             // Add change event listener to handle manual member selection
             select.addEventListener('change', function() {
                 const selectedMemberInfo = document.getElementById('selectedMemberInfo');
-                const selectedMemberName = document.getElementById('selectedMemberName');
-                
                 if (this.value) {
                     const selectedMember = members.find(m => m.id == this.value);
                     if (selectedMember) {
-                        selectedMemberName.textContent = `${selectedMember.first_name} ${selectedMember.last_name} (${selectedMember.member_id})`;
+                        // Show full member info (matching scan/manual entry display)
+                        selectedMemberInfo.innerHTML = `
+                            <div class="alert alert-info">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-3">
+                                            <i class="fas fa-user-check me-2"></i>
+                                            <strong>Member Selected</strong>
+                                            <span class="badge bg-primary ms-2">
+                                                <i class="fas fa-hand-pointer me-1"></i>Manual Selection
+                                            </span>
+                                        </h6>
+                                        <div class="member-info-fields">
+                                            <p class="mb-2"><strong><i class="fas fa-user me-2"></i>Name:</strong><br>
+                                            ${selectedMember.first_name} ${selectedMember.last_name}</p>
+                                            
+                                            <p class="mb-2"><strong><i class="fas fa-id-card me-2"></i>Member ID:</strong><br>
+                                            ${selectedMember.member_id}</p>
+                                            
+                                            ${selectedMember.employee_code ? `<p class="mb-2"><strong><i class="fas fa-id-badge me-2"></i>Employee Code:</strong><br>${selectedMember.employee_code}</p>` : ''}
+                                            
+                                            ${selectedMember.employee_number ? `<p class="mb-2"><strong><i class="fas fa-hashtag me-2"></i>Employee Number:</strong><br>${selectedMember.employee_number}</p>` : ''}
+                                            
+                                            ${selectedMember.email ? `<p class="mb-2"><strong><i class="fas fa-envelope me-2"></i>Email:</strong><br><a href="mailto:${selectedMember.email}" class="text-decoration-none">${selectedMember.email}</a></p>` : ''}
+                                            
+                                            ${selectedMember.phone ? `<p class="mb-2"><strong><i class="fas fa-phone me-2"></i>Phone:</strong><br><a href="tel:${selectedMember.phone}" class="text-decoration-none">${selectedMember.phone}</a></p>` : ''}
+                                            
+                                            ${selectedMember.department ? `<p class="mb-2"><strong><i class="fas fa-building me-2"></i>Department:</strong><br>${selectedMember.department}</p>` : ''}
+                                            
+                                            ${selectedMember.position ? `<p class="mb-2"><strong><i class="fas fa-briefcase me-2"></i>Position:</strong><br>${selectedMember.position}</p>` : ''}
+                                        </div>
+                                        ${selectedMember.address ? `
+                                            <div class="mt-2">
+                                                <p class="mb-2"><strong><i class="fas fa-map-marker-alt me-2"></i>Address:</strong><br>
+                                                ${selectedMember.address}${selectedMember.city ? `, ${selectedMember.city}` : ''}${selectedMember.state ? `, ${selectedMember.state}` : ''}${selectedMember.zip_code ? ` ${selectedMember.zip_code}` : ''}</p>
+                                            </div>
+                                        ` : ''}
+                                        ${selectedMember.member_type || selectedMember.membership_type ? `
+                                            <div class="mt-2">
+                                                <span class="badge bg-info me-2">
+                                                    <i class="fas fa-tag me-1"></i>${selectedMember.member_type || selectedMember.membership_type}
+                                                </span>
+                                        ` : ''}
+                                        ${selectedMember.status ? `
+                                                <span class="badge ${selectedMember.status === 'active' ? 'bg-success' : selectedMember.status === 'inactive' ? 'bg-warning' : 'bg-secondary'} me-2">
+                                                    <i class="fas fa-circle me-1"></i>${selectedMember.status.charAt(0).toUpperCase() + selectedMember.status.slice(1)}
+                                                </span>
+                                        ` : ''}
+                                        ${selectedMember.join_date || selectedMember.membership_date ? `
+                                                <span class="badge bg-light text-dark me-2">
+                                                    <i class="fas fa-calendar me-1"></i>Joined: ${new Date(selectedMember.join_date || selectedMember.membership_date).toLocaleDateString()}
+                                                </span>
+                                        ` : ''}
+                                        ${selectedMember.max_books ? `
+                                                <span class="badge bg-secondary me-2">
+                                                    <i class="fas fa-book me-1"></i>Max Books: ${selectedMember.max_books}
+                                                </span>
+                                        ` : ''}
+                                        ${selectedMember.member_type || selectedMember.membership_type || selectedMember.status || selectedMember.join_date || selectedMember.membership_date || selectedMember.max_books ? '</div>' : ''}
+                                        
+                                        ${selectedMember.notes ? `
+                                            <div class="mt-3">
+                                                <p class="mb-1"><strong><i class="fas fa-sticky-note me-2"></i>Notes:</strong></p>
+                                                <div class="bg-light p-2 rounded">
+                                                    <small>${selectedMember.notes}</small>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-sm btn-outline-secondary mb-2" onclick="clearSelectedMember()">
+                                            <i class="fas fa-times me-1"></i> Clear Selection
+                                        </button>
+                                        <br>
+                                        <button class="btn btn-sm btn-outline-info mb-2" onclick="viewMemberHistory('${selectedMember.id}')">
+                                            <i class="fas fa-history me-1"></i> View History
+                                        </button>
+                                        <br>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editMember('${selectedMember.id}')">
+                                            <i class="fas fa-edit me-1"></i> Edit Member
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                         selectedMemberInfo.style.display = 'block';
                     }
                 } else {
@@ -413,12 +869,15 @@
             if (results && results.length > 0) {
                 console.log('📊 [CIRCULATION] Found', results.length, 'results');
                 
+                // Check for book QR codes
                 const qrResult = results.find(r => r.type === 'QR Code');
                 console.log('🎯 [CIRCULATION] QR result:', qrResult);
                 
                 if (qrResult && qrResult.books && qrResult.books.length > 0) {
                     console.log('📚 [CIRCULATION] Books found in QR:', qrResult.books);
                     const book = qrResult.books[0];
+                    
+                    // Check if this is a book UUID
                     if (book.uuid) {
                         console.log('✅ [CIRCULATION] Processing book UUID:', book.uuid);
                         processCirculation(book.uuid);
@@ -426,13 +885,46 @@
                         console.error('❌ [CIRCULATION] Book has no UUID:', book);
                         safeToast('showError', 'QR code does not contain valid book UUID');
                     }
-                } else if (qrResult && qrResult.members && qrResult.members.length > 0) {
-                    console.log('👥 [CIRCULATION] Members found in QR:', qrResult.members);
-                    const member = qrResult.members[0];
-                    handleMemberScan(member);
                 } else {
-                    console.warn('⚠️ [CIRCULATION] QR result has no books or members:', qrResult);
-                    safeToast('showError', 'QR code does not contain book or member information');
+                    // Try to parse raw QR data for book patterns
+                    let recognizedData = false;
+                    
+                    for (const result of results) {
+                        if (result.rawData) {
+                            console.log('🔍 [CIRCULATION] Analyzing raw QR data:', result.rawData);
+                            
+                            // Try to parse as JSON first
+                            try {
+                                const jsonData = JSON.parse(result.rawData);
+                                console.log('📄 [CIRCULATION] Parsed JSON data:', jsonData);
+                                
+                                // Check if it's book data
+                                if (jsonData.uuid || jsonData.bookId || jsonData.book_id) {
+                                    const bookUuid = jsonData.uuid || jsonData.bookId || jsonData.book_id;
+                                    console.log('📚 [CIRCULATION] Book UUID extracted from JSON:', bookUuid);
+                                    processCirculation(bookUuid);
+                                    recognizedData = true;
+                                    break;
+                                }
+                            } catch (e) {
+                                // Not JSON, try simple patterns
+                                const rawData = result.rawData.trim();
+                                
+                                // Check for UUID patterns (for books)
+                                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawData)) {
+                                    console.log('📚 [CIRCULATION] UUID pattern detected:', rawData);
+                                    processCirculation(rawData);
+                                    recognizedData = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!recognizedData) {
+                        console.warn('⚠️ [CIRCULATION] QR result contains no recognizable book data:', qrResult);
+                        safeToast('showError', 'QR code format not recognized. Please scan a valid book QR code.');
+                    }
                 }
             } else {
                 console.warn('⚠️ [CIRCULATION] No results found');
@@ -449,7 +941,15 @@
         // Process circulation (check-in or check-out)
         async function processCirculation(bookUuid) {
             const operation = document.querySelector('input[name="operation"]:checked').value;
-            const memberId = document.getElementById('memberSelect').value;
+            
+            // Get member ID from dropdown if available, otherwise use selectedMember
+            let memberId = null;
+            const memberSelect = document.getElementById('memberSelect');
+            if (memberSelect) {
+                memberId = memberSelect.value;
+            } else if (selectedMember) {
+                memberId = selectedMember.id;
+            }
             
             // Show book status first
             await showBookStatus(bookUuid);
@@ -746,6 +1246,7 @@
             `;
         }
         
+        
         function getTransactionStatusInfo(trans) {
             if (trans.display_type === 'Check-in') {
                 if (trans.return_condition && trans.return_condition !== 'good') {
@@ -819,75 +1320,6 @@
             if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
             return date.toLocaleDateString();
         }
-
-        // Handle member scan result
-        function handleMemberScan(member) {
-            console.log('👤 [CIRCULATION] Member scanned:', member);
-            
-            // Check if we're in checkout mode
-            const operation = document.querySelector('input[name="operation"]:checked').value;
-            if (operation !== 'checkout') {
-                safeToast('showWarning', 'Switch to "Check Out" mode to select members');
-                return;
-            }
-            
-            // Auto-select the member
-            selectMember(member);
-            
-            safeToast('showSuccess', `
-                <strong>Member Selected!</strong><br>
-                ${member.first_name} ${member.last_name}<br>
-                <small>Employee Code: ${member.employee_code || 'N/A'}</small>
-            `);
-        }
-        
-        // Select member programmatically
-        function selectMember(member) {
-            const memberSelect = document.getElementById('memberSelect');
-            const selectedMemberInfo = document.getElementById('selectedMemberInfo');
-            const selectedMemberName = document.getElementById('selectedMemberName');
-            
-            // Set the dropdown value
-            memberSelect.value = member.id;
-            
-            // Show selected member info
-            selectedMemberName.textContent = `${member.first_name} ${member.last_name} (${member.member_id})`;
-            selectedMemberInfo.style.display = 'block';
-            
-            console.log('✅ [CIRCULATION] Member selected:', member.first_name, member.last_name);
-        }
-        
-        // Clear selected member
-        function clearSelectedMember() {
-            const memberSelect = document.getElementById('memberSelect');
-            const selectedMemberInfo = document.getElementById('selectedMemberInfo');
-            
-            memberSelect.value = '';
-            selectedMemberInfo.style.display = 'none';
-            
-            console.log('🗑️ [CIRCULATION] Member selection cleared');
-        }
-        
-        // Scan member card
-        function scanMemberCard() {
-            console.log('📱 [CIRCULATION] Starting member card scan...');
-            
-            // Check if we're in checkout mode
-            const operation = document.querySelector('input[name="operation"]:checked').value;
-            if (operation !== 'checkout') {
-                safeToast('showWarning', 'Member card scanning is only available in "Check Out" mode');
-                return;
-            }
-            
-            // Start the scanner with member-specific configuration
-            if (circulationScanner) {
-                circulationScanner.start();
-                safeToast('showInfo', 'Scan the member\'s QR code card...');
-            } else {
-                safeToast('showError', 'Scanner not available');
-            }
-        }
-
         // Manual entry
         function manualEntry() {
             const modal = new bootstrap.Modal(document.getElementById('manualEntryModal'));
@@ -909,6 +1341,234 @@
             
             // Process the UUID
             processCirculation(bookUuid);
+        }
+        
+        // Missing unified scanner handler functions
+        function handleUnifiedScanResults(results) {
+            console.log('🎯 [UNIFIED SCAN] Results received:', results);
+            // For now, delegate to the main scan handler
+            handleScanResults(results);
+        }
+        
+        function handleUnifiedScanError(error) {
+            console.error('🚨 [UNIFIED SCAN] Error:', error);
+            handleScanError(error);
+        }
+        
+        function handleModeChange(mode) {
+            console.log('🔄 [UNIFIED SCAN] Mode changed to:', mode);
+            const indicator = document.getElementById('scannerModeIndicator');
+            if (indicator) {
+                indicator.innerHTML = '<i class="fas fa-qrcode me-2"></i>Book Scanner - Check In/Out';
+            }
+        }
+        
+        // Manual entry function
+        function manualEntry() {
+            const modal = new bootstrap.Modal(document.getElementById('manualEntryModal'));
+            modal.show();
+        }
+        
+        // Member action functions
+        function viewMemberHistory(memberId) {
+            console.log('👤 [MEMBER] Viewing history for member ID:', memberId);
+            
+            // Find the member name for better user experience
+            const member = members.find(m => m.id == memberId);
+            const memberName = member ? `${member.first_name} ${member.last_name}` : `Member #${memberId}`;
+            
+            console.log('👤 [MEMBER] Found member:', memberName);
+            
+            // Show the member history modal
+            showMemberHistoryModal(memberId, memberName);
+        }
+        
+        function editMember(memberId) {
+            console.log('👤 [MEMBER] Editing member ID:', memberId);
+            
+            // You can implement this to open edit modal or navigate to edit page
+            safeToast('showInfo', 'Opening member editor...');
+            
+            // Example: Navigate to edit page
+            // window.location.href = `/members/${memberId}/edit`;
+            
+            // Or open edit modal
+            showEditMemberModal(memberId);
+        }
+        
+        function showMemberHistoryModal(memberId, memberName = '') {
+            // Create and show a modal with member's circulation history
+            const modalHtml = `
+                <div class="modal fade" id="memberHistoryModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-history me-2"></i>Circulation History
+                                    ${memberName ? `<small class="text-muted ms-2">${memberName}</small>` : ''}
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="memberHistoryContent">
+                                    <div class="text-center">
+                                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                        <p class="mt-2">Loading member history...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if present
+            const existingModal = document.getElementById('memberHistoryModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('memberHistoryModal'));
+            modal.show();
+            
+            // Load member history data
+            loadMemberHistoryData(memberId);
+        }
+        
+        function showEditMemberModal(memberId) {
+            // For now, just show a placeholder
+            safeToast('showInfo', `Edit functionality for member ${memberId} would be implemented here.`);
+        }
+        
+        async function loadMemberHistoryData(memberId) {
+            const content = document.getElementById('memberHistoryContent');
+            
+            try {
+                // Try to get member's circulation history via different endpoints
+                let response;
+                let data;
+                
+                // First try: dedicated member history endpoint
+                try {
+                    response = await fetch(`/api/members/${memberId}/history`);
+                    if (response.ok) {
+                        data = await response.json();
+                    }
+                } catch (e) {
+                    console.log('Member history endpoint not available, trying alternatives...');
+                }
+                
+                // Second try: circulation transactions filtered by member
+                if (!data || !response.ok) {
+                    try {
+                        response = await fetch(`/api/circulation/member/${memberId}/transactions`);
+                        if (response.ok) {
+                            data = await response.json();
+                        }
+                    } catch (e) {
+                        console.log('Member transactions endpoint not available...');
+                    }
+                }
+                
+                // Third try: get recent transactions and filter by member on frontend
+                if (!data || !response.ok) {
+                    try {
+                        response = await fetch('/api/circulation/recent?limit=50');
+                        if (response.ok) {
+                            const allData = await response.json();
+                            if (allData.success && allData.transactions) {
+                                // Filter transactions for this member
+                                const memberTransactions = allData.transactions.filter(t => 
+                                    t.member && (t.member.id == memberId || String(t.member.id) === String(memberId))
+                                );
+                                data = {
+                                    success: true,
+                                    history: memberTransactions.map(t => ({
+                                        date: t.display_date || t.checkout_date || t.checkin_date,
+                                        action: t.display_type === 'Check-in' ? 'checkin' : 'checkout',
+                                        book_title: t.book ? t.book.title : 'Unknown Book',
+                                        status: t.status || (t.return_date ? 'returned' : 'active'),
+                                        due_date: t.due_date,
+                                        return_condition: t.return_condition,
+                                        fine_amount: t.fine_amount,
+                                        condition_fee: t.condition_fee
+                                    }))
+                                };
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Recent transactions endpoint also failed...');
+                    }
+                }
+                
+                // Display results
+                if (data && data.success && data.history && data.history.length > 0) {
+                    content.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                        <th>Book</th>
+                                        <th>Status</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.history.map(item => `
+                                        <tr>
+                                            <td>${new Date(item.date).toLocaleDateString()}</td>
+                                            <td>
+                                                <span class="badge ${item.action === 'checkout' ? 'bg-primary' : 'bg-success'}">
+                                                    <i class="fas fa-${item.action === 'checkout' ? 'sign-out-alt' : 'sign-in-alt'} me-1"></i>
+                                                    ${item.action === 'checkout' ? 'Check Out' : 'Check In'}
+                                                </span>
+                                            </td>
+                                            <td>${item.book_title || 'Unknown Book'}</td>
+                                            <td>
+                                                <span class="badge ${item.status === 'active' ? 'bg-warning' : 'bg-secondary'}">
+                                                    ${item.status || '-'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                ${item.due_date ? `<small>Due: ${new Date(item.due_date).toLocaleDateString()}</small><br>` : ''}
+                                                ${item.return_condition && item.return_condition !== 'good' ? `<small class="text-warning">Condition: ${item.return_condition}</small><br>` : ''}
+                                                ${item.fine_amount > 0 ? `<small class="text-danger">Fine: $${item.fine_amount.toFixed(2)}</small><br>` : ''}
+                                                ${item.condition_fee > 0 ? `<small class="text-danger">Fee: $${item.condition_fee.toFixed(2)}</small>` : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div class="text-center text-muted">
+                            <i class="fas fa-inbox fa-3x"></i>
+                            <p class="mt-2">No circulation history found for this member.</p>
+                            <small class="text-muted">This could mean the member hasn't borrowed any books yet, or the history data is not available.</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading member history:', error);
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading member history. The member history service may not be available.
+                        <br><small class="mt-1 d-block">Error: ${error.message}</small>
+                    </div>
+                `;
+            }
         }
     </script>
 {% endblock %}

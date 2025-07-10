@@ -144,7 +144,7 @@ def add_book():
                 title=data['title'],
                 author=data['author'],
                 publisher=data.get('publisher'),
-                genre=data.get('genre'),
+                categories=data.get('categories'),
                 description=data.get('description'),
                 language=data.get('language', 'English'),
                 pages=data.get('pages'),

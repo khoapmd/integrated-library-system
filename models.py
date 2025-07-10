@@ -14,7 +14,7 @@ class Book(db.Model):
     author = db.Column(db.String(255), nullable=False)
     publisher = db.Column(db.String(255), nullable=True)
     publication_date = db.Column(db.Date, nullable=True)
-    genre = db.Column(db.String(100), nullable=True)
+    categories = db.Column(db.Text, nullable=True)  # Changed from genre to categories, using Text to store comma-separated values
     description = db.Column(db.Text, nullable=True)
     language = db.Column(db.String(50), nullable=True, default='English')
     pages = db.Column(db.Integer, nullable=True)
@@ -37,7 +37,7 @@ class Book(db.Model):
             'author': self.author,
             'publisher': self.publisher,
             'publication_date': self.publication_date.isoformat() if self.publication_date else None,
-            'genre': self.genre,
+            'categories': self.categories,
             'description': self.description,
             'language': self.language,
             'pages': self.pages,

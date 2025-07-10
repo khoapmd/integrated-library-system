@@ -148,8 +148,8 @@
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="genre" class="form-label">Genre</label>
-                                        <input type="text" class="form-control" id="genre" name="genre">
+                                        <label for="categories" class="form-label">Categories</label>
+                                        <input type="text" class="form-control" id="categories" name="categories" placeholder="e.g., Fiction, Mystery, Science">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="location" class="form-label">Shelf Location</label>
@@ -253,8 +253,8 @@
                                         
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
-                                                <label for="editGenre" class="form-label">Genre</label>
-                                                <input type="text" class="form-control" id="editGenre" name="genre">
+                                                <label for="editCategories" class="form-label">Categories</label>
+                                                <input type="text" class="form-control" id="editCategories" name="categories" placeholder="e.g., Fiction, Mystery, Science">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label for="editLocation" class="form-label">Shelf Location</label>
@@ -622,6 +622,12 @@
                     document.getElementById('description').value = book.description || '';
                     if (book.pages || book.pageCount) document.getElementById('pages').value = book.pages || book.pageCount;
                     
+                    // Handle categories (can be array or string)
+                    if (book.categories) {
+                        const categoriesText = Array.isArray(book.categories) ? book.categories.join(', ') : book.categories;
+                        document.getElementById('categories').value = categoriesText;
+                    }
+                    
                     // Show success message
                     showSuccess('Book information loaded successfully!');
                 } else {
@@ -662,13 +668,17 @@
 
                 modalScanner.showBookDetails = function(bookData) {
                     // Fill form with book data and close modal
+                    const categoriesText = bookData.categories ? 
+                        (Array.isArray(bookData.categories) ? bookData.categories.join(', ') : bookData.categories) : '';
+                    
                     useScannedISBN(
                         bookData.isbn || '',
                         bookData.title || '',
                         bookData.author || '',
                         bookData.publisher || '',
                         bookData.language || 'English',
-                        bookData.description || ''
+                        bookData.description || '',
+                        categoriesText
                     );
                 };
             }
@@ -710,8 +720,9 @@
                                     <strong>ISBN:</strong> ${book.isbn || 'Not available'}
                                     ${book.publisher ? `<br><strong>Publisher:</strong> ${book.publisher}` : ''}
                                     ${book.language ? `<br><strong>Language:</strong> ${book.language}` : ''}
+                                    ${book.categories ? `<br><strong>Categories:</strong> ${Array.isArray(book.categories) ? book.categories.join(', ') : book.categories}` : ''}
                                 </p>
-                                <button class="btn btn-danger btn-sm" onclick="useScannedISBN('${book.isbn || ''}', '${book.title}', '${book.author}', '${book.publisher || ''}', '${book.language || 'English'}', '${book.description || ''}')">
+                                <button class="btn btn-danger btn-sm" onclick="useScannedISBN('${book.isbn || ''}', '${book.title}', '${book.author}', '${book.publisher || ''}', '${book.language || 'English'}', '${book.description || ''}', '${book.categories ? (Array.isArray(book.categories) ? book.categories.join(', ') : book.categories) : ''}')">
                                     <i class="fas fa-plus me-1"></i>Use This Book
                                 </button>
                             </div>
@@ -728,7 +739,7 @@
                 `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${message}</div>`;
         }
 
-        function useScannedISBN(isbn, title, author, publisher, language, description) {
+        function useScannedISBN(isbn, title, author, publisher, language, description, categories = '') {
             // Fill the form with scanned book data
             document.getElementById('isbn').value = isbn;
             document.getElementById('title').value = title;
@@ -736,6 +747,7 @@
             document.getElementById('publisher').value = publisher;
             document.getElementById('language').value = language;
             document.getElementById('description').value = description;
+            document.getElementById('categories').value = categories;
             
             // Set default copy counts if not already set
             if (!document.getElementById('copies_total').value) {
@@ -802,7 +814,7 @@
                     document.getElementById('editPublisher').value = book.publisher || '';
                     document.getElementById('editLanguage').value = book.language || '';
                     document.getElementById('editPages').value = book.pages || '';
-                    document.getElementById('editGenre').value = book.genre || '';
+                    document.getElementById('editCategories').value = book.categories || '';
                     document.getElementById('editLocation').value = book.location || '';
                     document.getElementById('editDescription').value = book.description || '';
                     document.getElementById('editCopiesTotal').value = book.copies_total || 1;
@@ -981,6 +993,12 @@
                     document.getElementById('editPages').value = bookInfo.pages || bookInfo.pageCount || '';
                     document.getElementById('editDescription').value = bookInfo.description || '';
                     
+                    // Handle categories (can be array or string)
+                    if (bookInfo.categories) {
+                        const categoriesText = Array.isArray(bookInfo.categories) ? bookInfo.categories.join(', ') : bookInfo.categories;
+                        document.getElementById('editCategories').value = categoriesText;
+                    }
+                    
                     showSuccess('📚 Book information refreshed from Google Books API!');
                 } else {
                     showError('Could not refresh book information: ' + data.message);
@@ -1156,6 +1174,12 @@
                     document.getElementById('language').value = bookInfo.language || 'English';
                     document.getElementById('pages').value = bookInfo.pages || bookInfo.pageCount || '';
                     document.getElementById('description').value = bookInfo.description || '';
+                    
+                    // Handle categories (can be array or string)
+                    if (bookInfo.categories) {
+                        const categoriesText = Array.isArray(bookInfo.categories) ? bookInfo.categories.join(', ') : bookInfo.categories;
+                        document.getElementById('categories').value = categoriesText;
+                    }
                     
                     // Handle copy counts
                     const suggestedCopies = bookInfo.suggested_copies || 1;

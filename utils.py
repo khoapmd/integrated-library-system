@@ -221,14 +221,16 @@ class ISBNScanner:
                 except Exception as e:
                     print(f"Error fetching cover: {e}")
                 
-                # Try to get description and page count from Google Books API
+                # Try to get description, page count, and categories from Google Books API
                 google_data = self._get_description_from_google_books(isbn_clean)
                 description = None
                 page_count = None
+                categories = None
                 
                 if google_data:
                     description = google_data.get('description')
                     page_count = google_data.get('pageCount')
+                    categories = google_data.get('categories')
                 
                 # If no description from Google Books, try Open Library
                 if not description:
@@ -246,6 +248,7 @@ class ISBNScanner:
                     'cover_url': cover_url,
                     'pages': page_count,
                     'pageCount': page_count,  # Include both fields for compatibility
+                    'categories': categories,  # Add categories field
                     'source': 'api_lookup'
                 }
             else:
@@ -269,6 +272,9 @@ class ISBNScanner:
                                 if len(description) > 500:
                                     description = description[:500] + "..."
                             
+                            # Extract categories
+                            categories = volume_info.get('categories', [])
+                            
                             print(f"✅ Successfully found book info via Google Books API")
                             return {
                                 'isbn': isbn_clean,
@@ -281,6 +287,7 @@ class ISBNScanner:
                                 'description': description,
                                 'cover_url': volume_info.get('imageLinks', {}).get('thumbnail'),
                                 'pages': volume_info.get('pageCount'),
+                                'categories': categories,  # Add categories field
                                 'source': 'google_books_fallback'
                             }
                 except Exception as e:
@@ -309,6 +316,7 @@ class ISBNScanner:
                     'description': f'Book with ISBN {isbn_clean}. Please update information manually.',
                     'cover_url': None,
                     'pages': None,
+                    'categories': [],  # Add empty categories array
                     'source': 'manual_entry'
                 }
                 
@@ -326,11 +334,12 @@ class ISBNScanner:
                 'description': f'Book with ISBN {isbn}. Error occurred during lookup: {str(e)}',
                 'cover_url': None,
                 'pages': None,
+                'categories': [],  # Add empty categories array
                 'source': 'error_fallback'
             }
 
     def _get_description_from_google_books(self, isbn):
-        """Get book description and page count from Google Books API"""
+        """Get book description, page count, and categories from Google Books API"""
         try:
             url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
             response = self.session.get(url, timeout=self.timeout)
@@ -341,8 +350,9 @@ class ISBNScanner:
                     volume_info = data['items'][0].get('volumeInfo', {})
                     description = volume_info.get('description', '')
                     page_count = volume_info.get('pageCount')
+                    categories = volume_info.get('categories', [])
                     
-                    # Clean up HTML tags if present
+                    # Clean up HTML tags if present in description
                     if description:
                         import re
                         description = re.sub(r'<[^>]+>', '', description)
@@ -353,7 +363,8 @@ class ISBNScanner:
                     
                     return {
                         'description': description,
-                        'pageCount': page_count
+                        'pageCount': page_count,
+                        'categories': categories
                     }
             return None
         except Exception as e:
@@ -456,6 +467,7 @@ class ISBNScanner:
                         'cover_url': cover_url,
                         'pages': pages,
                         'pageCount': pages,
+                        'categories': [],  # Open Library doesn't typically have categories, so empty array
                         'source': 'open_library_fallback'
                     }
             return None
