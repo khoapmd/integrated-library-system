@@ -31,8 +31,21 @@ def main():
     
     # Initialize database
     with app.app_context():
-        db.create_all()
-        print("✅ Database initialized")
+        # Wait for database to be ready (for PostgreSQL)
+        max_retries = 30
+        for attempt in range(max_retries):
+            try:
+                db.create_all()
+                print("✅ Database initialized")
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"⏳ Waiting for database... (attempt {attempt + 1}/{max_retries})")
+                    import time
+                    time.sleep(2)
+                else:
+                    print(f"❌ Failed to connect to database: {e}")
+                    sys.exit(1)
     
     # Configure SSL if HTTPS is requested
     ssl_context = None

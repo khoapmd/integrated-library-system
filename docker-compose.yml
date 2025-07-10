@@ -1,46 +1,75 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-library}
+      POSTGRES_USER: ${POSTGRES_USER:-libraryuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-libraryuser} -d ${POSTGRES_DB:-library}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - default
+      - access_tunnel
+
+  # Library Application
   library-app:
     build: .
-    ports:
-      - "5000:5000"
     volumes:
-      # Persist database
-      - library_data:/app/instance
       # Persist uploaded files
       - library_uploads:/app/uploads
       - library_member_cards:/app/member_cards
       # Persist logs
       - library_logs:/app/logs
+      # Keep instance for SQLite fallback
+      - library_data:/app/instance
     environment:
       - FLASK_ENV=production
       - PYTHONUNBUFFERED=1
+      # Security settings for reverse proxy deployment
+      - SESSION_COOKIE_SECURE=true
+      - SESSION_COOKIE_HTTPONLY=true
+      - PREFERRED_URL_SCHEME=https
+      # Add your production secret key
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      # PostgreSQL Database URL
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-libraryuser}:${POSTGRES_PASSWORD:-change-this-password}@db:5432/${POSTGRES_DB:-library}
+      # Database connection settings
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-library}
+      - POSTGRES_USER=${POSTGRES_USER:-libraryuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change-this-password}
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # Optional: Add a reverse proxy for production
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - library-app
-    restart: unless-stopped
-    profiles:
-      - production
+    networks:
+      - default
+      - access_tunnel
 
 volumes:
+  postgres_data:
   library_data:
   library_uploads:
   library_member_cards:
   library_logs:
+
+networks:
+  access_tunnel:
+    external: true

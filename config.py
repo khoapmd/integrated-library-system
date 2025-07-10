@@ -38,6 +38,20 @@ class ProductionConfig(Config):
     
     # Use PostgreSQL in production if available
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///library.db'
+    
+    # Security settings for production
+    SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
+    SESSION_COOKIE_HTTPONLY = True  # Prevent XSS access to cookies
+    SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+    
+    # Trust proxy headers (for Cloudflare tunnel, nginx, etc.)
+    PREFERRED_URL_SCHEME = 'https'
+    
+    # Rate limiting settings
+    RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL', 'memory://')
+    
+    # Security headers
+    SEND_FILE_MAX_AGE_DEFAULT = 31536000  # 1 year for static files
 
 class TestingConfig(Config):
     """Testing configuration"""

@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 from models import db, Book, Member, Transaction
 from utils import QRCodeManager, ISBNScanner, generate_member_id, calculate_fine
 from config import config, Config
@@ -14,6 +15,11 @@ def create_app(config_name='default'):
     
     # Load configuration
     app.config.from_object(config[config_name])
+    
+    # Configure for reverse proxy (Cloudflare tunnel, nginx, etc.)
+    # This middleware handles X-Forwarded-For, X-Forwarded-Proto, etc.
+    if not app.debug:
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
     # Initialize extensions
     db.init_app(app)
@@ -73,6 +79,44 @@ def test_member_qr():
     """Redirect to system test page where all tests are consolidated"""
     from flask import redirect, url_for
     return redirect(url_for('system_test_page'))
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Docker and monitoring"""
+    try:
+        # Check database connectivity
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'database': 'connected'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'timestamp': datetime.now().isoformat(),
+            'database': 'error',
+            'error': str(e)
+        }), 503
+
+@app.route('/ready')
+def readiness_check():
+    """Readiness check for Kubernetes/orchestration"""
+    try:
+        # More comprehensive checks can be added here
+        book_count = Book.query.count()
+        return jsonify({
+            'status': 'ready',
+            'timestamp': datetime.now().isoformat(),
+            'database': 'ready',
+            'books_count': book_count
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'not_ready',
+            'timestamp': datetime.now().isoformat(),
+            'error': str(e)
+        }), 503
 
 # API Routes
 
