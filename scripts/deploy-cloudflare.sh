@@ -51,7 +51,7 @@ max_attempts=30
 attempt=1
 
 while [ $attempt -le $max_attempts ]; do
-    if docker-compose exec -T library-app curl -f http://localhost:5000/health >/dev/null 2>&1; then
+    if docker compose exec -T library-app curl -f http://localhost:5000/health >/dev/null 2>&1; then
         echo "✅ Application is healthy!"
         break
     fi
@@ -64,7 +64,7 @@ done
 if [ $attempt -gt $max_attempts ]; then
     echo "❌ Application failed to start properly"
     echo "📋 Checking logs..."
-    docker-compose logs library-app
+    docker compose logs library-app
     exit 1
 fi
 
@@ -72,12 +72,12 @@ echo ""
 echo "🎉 Application is healthy!"
 echo ""
 echo "📋 Initializing database with sample data..."
-if docker-compose exec -T library-app python scripts/init_postgres.py; then
+if docker compose exec -T library-app python scripts/init_postgres.py; then
     echo "✅ Database initialized successfully!"
 else
     echo "⚠️  Database initialization failed, but application is running"
     echo "   You can initialize manually later with:"
-    echo "   docker-compose exec library-app python scripts/init_postgres.py"
+    echo "   docker compose exec library-app python scripts/init_postgres.py"
 fi
 
 echo ""
@@ -88,10 +88,10 @@ echo "1. Your tunnel should now be able to access: http://library-app:5000"
 echo "2. Test the application through your tunnel"
 echo ""
 echo "🔍 Useful commands:"
-echo "  View logs:       docker-compose logs -f library-app"
-echo "  View DB logs:    docker-compose logs -f db"
-echo "  Stop app:        docker-compose down"
-echo "  Check health:    docker-compose exec library-app curl http://localhost:5000/health"
-echo "  Check status:    docker-compose ps"
-echo "  DB shell:        docker-compose exec db psql -U libraryuser library"
+echo "  View logs:       docker compose logs -f library-app"
+echo "  View DB logs:    docker compose logs -f library-db"
+echo "  Stop app:        docker compose down"
+echo "  Check health:    docker compose exec library-app curl http://localhost:5000/health"
+echo "  Check status:    docker compose ps"
+echo "  DB shell:        docker compose exec library-db psql -U libraryuser library"
 echo ""
