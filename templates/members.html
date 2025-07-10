@@ -82,13 +82,13 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email *</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email">
                         </div>
                         
                         <div class="mb-3">
-                            <label for="employee_code" class="form-label">Employee Code</label>
-                            <input type="text" class="form-control" id="employee_code" name="employee_code" placeholder="e.g., EMP001">
+                            <label for="employee_code" class="form-label">Employee Code *</label>
+                            <input type="text" class="form-control" id="employee_code" name="employee_code" placeholder="e.g., EMP001" required>
                         </div>
                         
                         <div class="mb-3">
@@ -155,13 +155,13 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="edit_email" class="form-label">Email *</label>
-                            <input type="email" class="form-control" id="edit_email" name="email" required>
+                            <label for="edit_email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit_email" name="email">
                         </div>
                         
                         <div class="mb-3">
-                            <label for="edit_employee_code" class="form-label">Employee Code</label>
-                            <input type="text" class="form-control" id="edit_employee_code" name="employee_code" placeholder="e.g., EMP001">
+                            <label for="edit_employee_code" class="form-label">Employee Code *</label>
+                            <input type="text" class="form-control" id="edit_employee_code" name="employee_code" placeholder="e.g., EMP001" required>
                         </div>
                         
                         <div class="mb-3">
@@ -244,7 +244,7 @@
                             <tr>
                                 <td><code>${member.member_id}</code></td>
                                 <td>${member.first_name} ${member.last_name}</td>
-                                <td>${member.email}</td>
+                                <td>${member.email || '-'}</td>
                                 <td>${member.employee_code || '-'}</td>
                                 <td><span class="badge bg-dark">${member.department || '-'}</span></td>
                                 <td><span class="badge bg-secondary">${member.membership_type}</span></td>
@@ -282,7 +282,7 @@
             const formData = new FormData(form);
             
             // Validate required fields
-            const requiredFields = ['first_name', 'last_name', 'email'];
+            const requiredFields = ['first_name', 'last_name', 'employee_code'];
             for (const field of requiredFields) {
                 if (!formData.get(field)) {
                     showWarning(`Please fill in the ${field.replace('_', ' ')} field`);
@@ -411,7 +411,7 @@
                         document.getElementById('edit_member_id').value = member.id;
                         document.getElementById('edit_first_name').value = member.first_name;
                         document.getElementById('edit_last_name').value = member.last_name;
-                        document.getElementById('edit_email').value = member.email;
+                        document.getElementById('edit_email').value = member.email || '';
                         document.getElementById('edit_employee_code').value = member.employee_code || '';
                         document.getElementById('edit_department').value = member.department || '';
                         document.getElementById('edit_membership_type').value = member.membership_type;
@@ -437,7 +437,7 @@
             const memberId = formData.get('member_id');
             
             // Validate required fields
-            const requiredFields = ['first_name', 'last_name', 'email'];
+            const requiredFields = ['first_name', 'last_name', 'employee_code'];
             for (const field of requiredFields) {
                 if (!formData.get(field)) {
                     showWarning(`Please fill in the ${field.replace('_', ' ')} field`);

@@ -764,13 +764,39 @@ def add_member():
     try:
         data = request.get_json()
         
+        # Validate required fields
+        required_fields = ['first_name', 'last_name', 'employee_code']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'{field.replace("_", " ").title()} is required'
+                }), 400
+        
+        # Check if employee_code already exists
+        existing_member = Member.query.filter_by(employee_code=data['employee_code']).first()
+        if existing_member:
+            return jsonify({
+                'success': False,
+                'message': 'Employee code already exists'
+            }), 400
+        
+        # Check if email already exists (only if email is provided)
+        if data.get('email'):
+            existing_email = Member.query.filter_by(email=data['email']).first()
+            if existing_email:
+                return jsonify({
+                    'success': False,
+                    'message': 'Email already exists'
+                }), 400
+        
         member = Member(
             member_id=generate_member_id(),
             first_name=data['first_name'],
             last_name=data['last_name'],
-            email=data['email'],
+            email=data.get('email'),
             phone=data.get('phone'),
-            employee_code=data.get('employee_code'),
+            employee_code=data['employee_code'],
             department=data.get('department'),
             membership_type=data.get('membership_type', 'regular'),
             max_books=data.get('max_books', 5)
@@ -804,6 +830,30 @@ def update_member(member_id):
             }), 404
         
         data = request.get_json()
+        
+        # Check if employee_code is being updated and if it already exists
+        if 'employee_code' in data and data['employee_code'] != member.employee_code:
+            if not data['employee_code']:
+                return jsonify({
+                    'success': False,
+                    'message': 'Employee code is required'
+                }), 400
+                
+            existing_member = Member.query.filter_by(employee_code=data['employee_code']).first()
+            if existing_member:
+                return jsonify({
+                    'success': False,
+                    'message': 'Employee code already exists'
+                }), 400
+        
+        # Check if email is being updated and if it already exists
+        if 'email' in data and data['email'] and data['email'] != member.email:
+            existing_email = Member.query.filter_by(email=data['email']).first()
+            if existing_email:
+                return jsonify({
+                    'success': False,
+                    'message': 'Email already exists'
+                }), 400
         
         # Update member fields
         member.first_name = data.get('first_name', member.first_name)
