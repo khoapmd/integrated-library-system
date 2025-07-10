@@ -1,6 +1,6 @@
 # Core Flask dependencies
-flask==2.3.3
-flask-sqlalchemy==3.0.5
+flask==3.0.0
+flask-sqlalchemy==3.1.1
 flask-cors==4.0.0
 
 # Database drivers
@@ -10,16 +10,17 @@ psycopg2-binary==2.9.9  # PostgreSQL adapter
 qrcode[pil]==7.4.2
 opencv-python==4.9.0.80
 pyzbar==0.1.9
-pillow==10.0.1
+pillow==10.2.0
 
 # ISBN lookup and validation
 isbnlib==3.10.14
 requests==2.31.0
 
 # Core libraries
-numpy==1.24.4
+numpy>=1.26.0,<2.0.0  # Python 3.12 compatible
 cryptography==41.0.7
 urllib3==2.0.7
+setuptools>=68.0.0  # Fix for pkgutil.ImpImporter issue
 
 # Development dependencies (optional)
 pytest==7.4.3
