@@ -68,6 +68,79 @@
                 </div>
                 <div class="modal-body">
                     <div class="row">
+                        <!-- Book Form Section -->
+                        <div class="col-md-6">
+                            <form id="addBookForm">
+                                <div class="mb-2">
+                                    <label for="isbn" class="form-label">ISBN</label>
+                                    <input type="text" class="form-control form-control-sm" id="isbn" name="isbn" placeholder="Enter ISBN or will be filled from scan">
+                                    <small class="form-text text-muted">Can be automatically filled when you scan an ISBN</small>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label for="title" class="form-label">Title *</label>
+                                    <input type="text" class="form-control form-control-sm" id="title" name="title" required>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label for="author" class="form-label">Author *</label>
+                                        <input type="text" class="form-control form-control-sm" id="author" name="author" required>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label for="publisher" class="form-label">Publisher</label>
+                                        <input type="text" class="form-control form-control-sm" id="publisher" name="publisher">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label for="language" class="form-label">Language</label>
+                                        <input type="text" class="form-control form-control-sm" id="language" name="language" value="English">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label for="pages" class="form-label">Pages</label>
+                                        <input type="number" class="form-control form-control-sm" id="pages" name="pages">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label for="categories" class="form-label">Categories</label>
+                                        <input type="text" class="form-control form-control-sm" id="categories" name="categories" placeholder="e.g., Fiction, Mystery, Science">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label for="location" class="form-label">Shelf Location</label>
+                                        <input type="text" class="form-control form-control-sm" id="location" name="location" placeholder="e.g., A1-001">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label for="copies_total" class="form-label">Total Copies *</label>
+                                        <input type="number" class="form-control form-control-sm" id="copies_total" name="copies_total" value="1" min="1" required>
+                                        <small class="form-text text-muted">Auto-calculated based on existing copies</small>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label for="copies_available" class="form-label">Available Copies *</label>
+                                        <input type="number" class="form-control form-control-sm" id="copies_available" name="copies_available" value="1" min="1" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control form-control-sm" id="description" name="description" rows="3" placeholder="Book description..."></textarea>
+                                </div>
+                                
+                                <!-- Existing Book Warning -->
+                                <div id="existingBookWarning" class="alert alert-info d-none">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Book Already in Library</h6>
+                                    <p class="mb-0">This book is already in our collection. You can add more copies using the form above.</p>
+                                    <div id="existingBookInfo" class="mt-2"></div>
+                                </div>
+                            </form>
+                        </div>
+                        
                         <!-- ISBN Scanner Section -->
                         <div class="col-md-6">
                             <div class="card mb-3">
@@ -109,89 +182,24 @@
                                     <div id="isbnScanResults" class="mt-3"></div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Book Form Section -->
-                        <div class="col-md-6">
-                            <form id="addBookForm">
-                                <div class="mb-3">
-                                    <label for="isbn" class="form-label">ISBN</label>
-                                    <input type="text" class="form-control" id="isbn" name="isbn" placeholder="Enter ISBN or will be filled from scan">
-                                    <small class="form-text text-muted">Can be automatically filled when you scan an ISBN</small>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="title" class="form-label">Title *</label>
-                                    <input type="text" class="form-control" id="title" name="title" required>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="author" class="form-label">Author *</label>
-                                    <input type="text" class="form-control" id="author" name="author" required>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="publisher" class="form-label">Publisher</label>
-                                    <input type="text" class="form-control" id="publisher" name="publisher">
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="language" class="form-label">Language</label>
-                                        <input type="text" class="form-control" id="language" name="language" value="English">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="pages" class="form-label">Pages</label>
-                                        <input type="number" class="form-control" id="pages" name="pages">
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="categories" class="form-label">Categories</label>
-                                        <input type="text" class="form-control" id="categories" name="categories" placeholder="e.g., Fiction, Mystery, Science">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="location" class="form-label">Shelf Location</label>
-                                        <input type="text" class="form-control" id="location" name="location" placeholder="e.g., A1-001">
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="copies_total" class="form-label">Total Copies *</label>
-                                        <input type="number" class="form-control" id="copies_total" name="copies_total" value="1" min="1" required>
-                                        <small class="form-text text-muted">Auto-calculated based on existing copies</small>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="copies_available" class="form-label">Available Copies *</label>
-                                        <input type="number" class="form-control" id="copies_available" name="copies_available" value="1" min="1" required>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="description" class="form-label">Description</label>
-                                    <textarea class="form-control" id="description" name="description" rows="4" placeholder="Book description..."></textarea>
-                                </div>
-                                
-                                <!-- Existing Book Warning -->
-                                <div id="existingBookWarning" class="alert alert-info d-none">
-                                    <h6><i class="fas fa-info-circle me-2"></i>Book Already in Library</h6>
-                                    <p class="mb-0">This book is already in our collection. You can add more copies using the form above.</p>
-                                    <div id="existingBookInfo" class="mt-2"></div>
-                                </div>
-                            </form>
+                            
+                            <!-- Action Buttons -->
+                            <div class="mt-3 d-grid gap-2">
+                                <button type="button" class="btn btn-danger" onclick="saveBook()">
+                                    <i class="fas fa-save me-2"></i>Save Book
+                                </button>
+                                <button type="button" class="btn btn-dark" onclick="clearForm()">
+                                    <i class="fas fa-broom me-2"></i>Clear Form
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark" onclick="clearForm()">
-                        <i class="fas fa-broom me-2"></i>Clear Form
-                    </button>
-                    <button type="button" class="btn btn-danger" onclick="saveBook()">
-                        <i class="fas fa-save me-2"></i>Save Book
-                    </button>
+                <div class="modal-footer d-none">
+                    <!-- Buttons moved to left column -->
                 </div>
             </div>
         </div>
@@ -208,123 +216,131 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <!-- Book Info Section -->
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header">
-                                    <h6><i class="fas fa-info-circle me-2"></i>Book Information</h6>
-                                </div>
-                                <div class="card-body">
-                                    <form id="editBookForm">
-                                        <input type="hidden" id="editBookId" name="id">
-                                        
+                    <form id="editBookForm">
+                        <input type="hidden" id="editBookId" name="id">
+                        
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6><i class="fas fa-book me-2"></i>Basic Information</h6>
+                                    </div>
+                                    <div class="card-body">
                                         <div class="mb-3">
                                             <label for="editIsbn" class="form-label">ISBN</label>
-                                            <input type="text" class="form-control" id="editIsbn" name="isbn" readonly>
+                                            <input type="text" class="form-control form-control-sm" id="editIsbn" name="isbn" readonly>
                                             <small class="form-text text-muted">ISBN cannot be changed</small>
                                         </div>
                                         
                                         <div class="mb-3">
                                             <label for="editTitle" class="form-label">Title *</label>
-                                            <input type="text" class="form-control" id="editTitle" name="title" required>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="editAuthor" class="form-label">Author *</label>
-                                            <input type="text" class="form-control" id="editAuthor" name="author" required>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="editPublisher" class="form-label">Publisher</label>
-                                            <input type="text" class="form-control" id="editPublisher" name="publisher">
+                                            <input type="text" class="form-control form-control-sm" id="editTitle" name="title" required>
                                         </div>
                                         
                                         <div class="row">
-                                            <div class="col-md-6 mb-3">
+                                            <div class="col-6 mb-3">
+                                                <label for="editAuthor" class="form-label">Author *</label>
+                                                <input type="text" class="form-control form-control-sm" id="editAuthor" name="author" required>
+                                            </div>
+                                            <div class="col-6 mb-3">
+                                                <label for="editPublisher" class="form-label">Publisher</label>
+                                                <input type="text" class="form-control form-control-sm" id="editPublisher" name="publisher">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-6 mb-3">
                                                 <label for="editLanguage" class="form-label">Language</label>
-                                                <input type="text" class="form-control" id="editLanguage" name="language">
+                                                <input type="text" class="form-control form-control-sm" id="editLanguage" name="language">
                                             </div>
-                                            <div class="col-md-6 mb-3">
+                                            <div class="col-6 mb-3">
                                                 <label for="editPages" class="form-label">Pages</label>
-                                                <input type="number" class="form-control" id="editPages" name="pages">
+                                                <input type="number" class="form-control form-control-sm" id="editPages" name="pages">
                                             </div>
                                         </div>
                                         
                                         <div class="row">
-                                            <div class="col-md-6 mb-3">
+                                            <div class="col-6 mb-3">
                                                 <label for="editCategories" class="form-label">Categories</label>
-                                                <input type="text" class="form-control" id="editCategories" name="categories" placeholder="e.g., Fiction, Mystery, Science">
+                                                <input type="text" class="form-control form-control-sm" id="editCategories" name="categories" placeholder="Fiction, Mystery">
                                             </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label for="editLocation" class="form-label">Shelf Location</label>
-                                                <input type="text" class="form-control" id="editLocation" name="location" placeholder="e.g., A1-001">
+                                            <div class="col-6 mb-3">
+                                                <label for="editLocation" class="form-label">Location</label>
+                                                <input type="text" class="form-control form-control-sm" id="editLocation" name="location" placeholder="A1-001">
                                             </div>
                                         </div>
                                         
                                         <div class="mb-3">
                                             <label for="editDescription" class="form-label">Description</label>
-                                            <textarea class="form-control" id="editDescription" name="description" rows="4"></textarea>
+                                            <textarea class="form-control form-control-sm" id="editDescription" name="description" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Inventory & Status -->
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6><i class="fas fa-warehouse me-2"></i>Inventory & Status</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Current Statistics -->
+                                        <div class="card bg-light mb-3">
+                                            <div class="card-body py-2">
+                                                <h6 class="card-title mb-2" style="font-size: 0.9rem;">Current Statistics</h6>
+                                                <div id="editBookStats">
+                                                    <!-- Will be populated with current book stats -->
+                                                </div>
+                                            </div>
                                         </div>
                                         
-                                        <!-- Move copy count and status fields into the form -->
                                         <div class="row">
-                                            <div class="col-md-6 mb-3">
+                                            <div class="col-6 mb-3">
                                                 <label for="editCopiesTotal" class="form-label">Total Copies *</label>
-                                                <input type="number" class="form-control" id="editCopiesTotal" name="copies_total" min="1" required>
+                                                <input type="number" class="form-control form-control-sm" id="editCopiesTotal" name="copies_total" min="1" required>
                                             </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label for="editCopiesAvailable" class="form-label">Available Copies *</label>
-                                                <input type="number" class="form-control" id="editCopiesAvailable" name="copies_available" min="0" required>
+                                            <div class="col-6 mb-3">
+                                                <label for="editCopiesAvailable" class="form-label">Available *</label>
+                                                <input type="number" class="form-control form-control-sm" id="editCopiesAvailable" name="copies_available" min="0" required>
                                             </div>
                                         </div>
                                         
                                         <div class="mb-3">
                                             <label for="editStatus" class="form-label">Status</label>
-                                            <select class="form-select" id="editStatus" name="status">
+                                            <select class="form-select form-select-sm" id="editStatus" name="status">
                                                 <option value="available">Available</option>
                                                 <option value="borrowed">Borrowed</option>
                                                 <option value="reserved">Reserved</option>
                                                 <option value="maintenance">Maintenance</option>
                                             </select>
                                         </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Inventory Management Section (visual display only) -->
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header">
-                                    <h6><i class="fas fa-warehouse me-2"></i>Inventory Statistics</h6>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Current Statistics -->
-                                    <div class="card bg-light">
-                                        <div class="card-body">
-                                            <h6 class="card-title">Current Statistics</h6>
-                                            <div id="editBookStats">
-                                                <!-- Will be populated with current book stats -->
-                                            </div>
-                                        </div>
+                                        
+                                        <!-- Validation Warnings -->
+                                        <div id="editValidationWarnings"></div>
                                     </div>
-                                    
-                                    <!-- Validation Warnings -->
-                                    <div id="editValidationWarnings" class="mt-3"></div>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="mt-3 d-grid gap-2">
+                                    <button type="button" class="btn btn-danger" onclick="updateBook()">
+                                        <i class="fas fa-save me-2"></i>Save Changes
+                                    </button>
+                                    <button type="button" class="btn btn-dark" onclick="refreshBookInfo()">
+                                        <i class="fas fa-sync me-2"></i>Refresh from ISBN
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark" onclick="refreshBookInfo()">
-                        <i class="fas fa-sync me-2"></i>Refresh from ISBN
-                    </button>
-                    <button type="button" class="btn btn-danger" onclick="updateBook()">
-                        <i class="fas fa-save me-2"></i>Save Changes
-                    </button>
+                </div>
+                <div class="modal-footer d-none">
+                    <!-- Buttons moved to inventory section -->
                 </div>
             </div>
         </div>
@@ -844,26 +860,26 @@
                 <div class="row text-center">
                     <div class="col-4">
                         <div class="stat-item">
-                            <h6 class="text-primary">${book.copies_total}</h6>
+                            <h6 class="text-primary mb-0" style="font-size: 1rem;">${book.copies_total}</h6>
                             <small>Total</small>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="stat-item">
-                            <h6 class="text-success">${book.copies_available}</h6>
+                            <h6 class="text-success mb-0" style="font-size: 1rem;">${book.copies_available}</h6>
                             <small>Available</small>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="stat-item">
-                            <h6 class="text-warning">${borrowed}</h6>
+                            <h6 class="text-warning mb-0" style="font-size: 1rem;">${borrowed}</h6>
                             <small>Borrowed</small>
                         </div>
                     </div>
                 </div>
-                <div class="mt-2">
+                <div class="mt-2 text-center">
                     <small class="text-muted">
-                        <strong>Last Updated:</strong> ${book.last_updated ? new Date(book.last_updated).toLocaleDateString() : 'N/A'}
+                        Last Updated: ${book.last_updated ? new Date(book.last_updated).toLocaleDateString() : 'N/A'}
                     </small>
                 </div>
             `;
