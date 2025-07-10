@@ -39,8 +39,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p instance member_cards uploads logs data
+# Make entrypoint script executable and create necessary directories
+RUN chmod +x entrypoint.sh && \
+    mkdir -p instance member_cards uploads logs data
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser && \
@@ -55,4 +56,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
 # Run the application
-CMD ["python", "main.py", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["./entrypoint.sh"]
