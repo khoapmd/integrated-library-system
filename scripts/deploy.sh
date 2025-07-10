@@ -26,12 +26,12 @@ if grep -q "change-this-password" .env.production; then
 fi
 
 echo "🔧 Building and starting services..."
-docker-compose up -d --build
+docker compose up -d --build
 
 echo "⏳ Waiting for services..."
 sleep 10
 
 echo "🔍 Checking status..."
-docker-compose ps
+docker compose ps
 
 echo "✅ Done! Your app should be accessible through your tunnel at: library-app:5000"

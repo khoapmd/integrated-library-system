@@ -35,10 +35,10 @@ if grep -q "change-this-password" .env.production; then
 fi
 
 echo "🔧 Building Docker image..."
-docker-compose build --no-cache
+docker compose build --no-cache
 
 echo "🏃 Starting services..."
-docker-compose up -d
+docker compose up -d
 
 echo "⏳ Waiting for services to be ready..."
 echo "   - Starting PostgreSQL database..."
