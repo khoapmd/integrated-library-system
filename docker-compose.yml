@@ -42,9 +42,9 @@ services:
       # Add your production secret key
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       # PostgreSQL Database URL
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-libraryuser}:${POSTGRES_PASSWORD:-change-this-password}@db:5432/${POSTGRES_DB:-library}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-libraryuser}:${POSTGRES_PASSWORD:-change-this-password}@library-db:5432/${POSTGRES_DB:-library}
       # Database connection settings
-      - POSTGRES_HOST=db
+      - POSTGRES_HOST=library-db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-library}
       - POSTGRES_USER=${POSTGRES_USER:-libraryuser}
