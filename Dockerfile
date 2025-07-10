@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 
+# Upgrade pip and install setuptools
+RUN pip install --upgrade pip setuptools wheel
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
