@@ -74,6 +74,11 @@ def qr_generator():
     """QR code generator for testing circulation scanner"""
     return render_template('qr_generator.html')
 
+@app.route('/favicon.ico')
+def favicon():
+    """Serve favicon"""
+    return send_file('static/img/logo.svg', mimetype='image/svg+xml')
+
 @app.route('/test-member-qr')
 def test_member_qr():
     """Redirect to system test page where all tests are consolidated"""

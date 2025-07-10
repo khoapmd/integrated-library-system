@@ -1,0 +1,5 @@
+<!-- This is a placeholder for favicon.ico - you can generate this from the SVG -->
+<!-- For now, we'll use the SVG as the primary favicon -->
+<!-- To generate ICO file, you can use online tools like: -->
+<!-- https://realfavicongenerator.net/ or https://favicon.io/ -->
+<!-- Upload the favicon.svg to generate all necessary favicon formats -->
