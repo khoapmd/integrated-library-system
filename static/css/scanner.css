@@ -184,16 +184,65 @@
 
 /* Form controls specific to scanner */
 .form-control, .form-select {
-    border-radius: 15px;
-    border: 2px solid var(--light-color);
+    border-radius: 15px !important;
+    border: 2px solid #e9ecef;
     padding: 12px 20px;
     font-weight: 500;
     transition: all 0.3s ease;
+    background-color: #fff;
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(219, 1, 28, 0.1) !important;
+    background-color: #fff;
+}
+
+/* Input group styling to maintain rounded borders */
+.input-group {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-group .form-control {
+    border-radius: 0 !important;
+    border-right: 0 !important;
+    border: 2px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
+    margin: 0;
+    z-index: 1;
+}
+
+.input-group .form-control:first-child {
+    border-top-left-radius: 15px !important;
+    border-bottom-left-radius: 15px !important;
+}
+
+.input-group .form-control:focus {
+    border-color: var(--primary-color) !important;
+    border-right-color: var(--primary-color) !important;
+    box-shadow: none !important;
+    z-index: 2;
+}
+
+.input-group .btn {
+    border-radius: 0 !important;
+    border: 2px solid var(--primary-color);
+    border-left: 1px solid var(--primary-color);
+    margin: 0;
+    z-index: 1;
+}
+
+.input-group .btn:last-child {
+    border-top-right-radius: 15px !important;
+    border-bottom-right-radius: 15px !important;
+}
+
+.input-group .btn:hover,
+.input-group .btn:focus {
+    z-index: 3;
+    box-shadow: 0 0 0 2px rgba(219, 1, 28, 0.1);
 }
 
 /* Transaction Cards Styling */

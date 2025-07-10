@@ -70,9 +70,6 @@
                                 <button class="btn btn-outline-primary" type="button" onclick="lookupMemberCode()">
                                     <i class="fas fa-search me-1"></i>Lookup
                                 </button>
-                                <button class="btn btn-outline-secondary" type="button" onclick="clearMemberSelection()">
-                                    <i class="fas fa-times me-1"></i>Clear
-                                </button>
                             </div>
                             <small class="form-text text-muted">Enter member ID or employee code and press Enter or click Lookup</small>
                             
@@ -175,9 +172,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="manualBookUuid" class="form-label">Book UUID:</label>
-                        <input type="text" class="form-control" id="manualBookUuid" placeholder="Enter book UUID">
-                        <small class="form-text text-muted">You can find the UUID on the book's details page</small>
+                        <label for="manualBookIdentifier" class="form-label">Book Identifier:</label>
+                        <input type="text" class="form-control" id="manualBookIdentifier" placeholder="Enter book UUID, ISBN, or barcode" onkeypress="if(event.key==='Enter') processManualEntry()">
+                        <small class="form-text text-muted">
+                            You can enter:
+                            <ul class="mb-0 mt-1">
+                                <li>Book UUID (e.g., 123e4567-e89b-12d3-a456-426614174000)</li>
+                                <li>ISBN-10 or ISBN-13 (e.g., 1234567890, 9781234567890)</li>
+                                <li>Barcode number from book's ISBN barcode</li>
+                            </ul>
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -526,25 +530,11 @@
         function handleISBNBook(book) {
             console.log('📖 [ISBN HANDLER] Processing ISBN book:', book);
             
-            // Show the detected book info and options to add it
-            const resultsDiv = document.getElementById('circulationResults');
-            if (resultsDiv) {
-                resultsDiv.innerHTML = `
-                    <div class="alert alert-info">
-                        <h6><i class="fas fa-book me-2"></i>ISBN Book Detected</h6>
-                        <p><strong>Title:</strong> ${book.title || 'Unknown'}</p>
-                        <p><strong>Author:</strong> ${book.author || 'Unknown'}</p>
-                        <p><strong>ISBN:</strong> ${book.isbn}</p>
-                        <div class="mt-3">
-                            <button class="btn btn-primary me-2" onclick="addBookToLibrary('${book.isbn}')">
-                                <i class="fas fa-plus me-1"></i>Add to Library
-                            </button>
-                            <button class="btn btn-secondary" onclick="clearResults()">
-                                <i class="fas fa-times me-1"></i>Cancel
-                            </button>
-                        </div>
-                    </div>
-                `;
+            // Use the new ISBN processing function
+            if (book.isbn) {
+                processISBNForCirculation(book.isbn);
+            } else {
+                safeToast('showError', 'No valid ISBN found in barcode data');
             }
         }
 
@@ -863,13 +853,13 @@
         }
 
         // Handle scan results
-        function handleScanResults(results) {
-            console.log('🔍 [CIRCULATION] QR Scan results received:', results);
+        async function handleScanResults(results) {
+            console.log('🔍 [CIRCULATION] Scan results received:', results);
             
             if (results && results.length > 0) {
                 console.log('📊 [CIRCULATION] Found', results.length, 'results');
                 
-                // Check for book QR codes
+                // Check for book QR codes first
                 const qrResult = results.find(r => r.type === 'QR Code');
                 console.log('🎯 [CIRCULATION] QR result:', qrResult);
                 
@@ -881,54 +871,73 @@
                     if (book.uuid) {
                         console.log('✅ [CIRCULATION] Processing book UUID:', book.uuid);
                         processCirculation(book.uuid);
+                        return;
                     } else {
                         console.error('❌ [CIRCULATION] Book has no UUID:', book);
                         safeToast('showError', 'QR code does not contain valid book UUID');
+                        return;
                     }
-                } else {
-                    // Try to parse raw QR data for book patterns
-                    let recognizedData = false;
+                }
+                
+                // Check for ISBN barcodes
+                const barcodeResult = results.find(r => r.type === 'ISBN Barcode');
+                console.log('📖 [CIRCULATION] Barcode result:', barcodeResult);
+                
+                if (barcodeResult && barcodeResult.books && barcodeResult.books.length > 0) {
+                    console.log('📖 [CIRCULATION] Books found in barcode:', barcodeResult.books);
+                    const book = barcodeResult.books[0];
                     
-                    for (const result of results) {
-                        if (result.rawData) {
-                            console.log('🔍 [CIRCULATION] Analyzing raw QR data:', result.rawData);
+                    // Process ISBN barcode - look up book by ISBN
+                    if (book.isbn) {
+                        console.log('📖 [CIRCULATION] Processing ISBN:', book.isbn);
+                        await processISBNForCirculation(book.isbn);
+                        return;
+                    }
+                }
+                
+                // Try to parse raw data for book patterns
+                let recognizedData = false;
+                
+                for (const result of results) {
+                    if (result.rawData) {
+                        console.log('🔍 [CIRCULATION] Analyzing raw data:', result.rawData);
+                        
+                        // Try to parse as JSON first
+                        try {
+                            const jsonData = JSON.parse(result.rawData);
+                            console.log('📄 [CIRCULATION] Parsed JSON data:', jsonData);
                             
-                            // Try to parse as JSON first
-                            try {
-                                const jsonData = JSON.parse(result.rawData);
-                                console.log('📄 [CIRCULATION] Parsed JSON data:', jsonData);
-                                
-                                // Check if it's book data
-                                if (jsonData.uuid || jsonData.bookId || jsonData.book_id) {
-                                    const bookUuid = jsonData.uuid || jsonData.bookId || jsonData.book_id;
-                                    console.log('📚 [CIRCULATION] Book UUID extracted from JSON:', bookUuid);
-                                    processCirculation(bookUuid);
-                                    recognizedData = true;
-                                    break;
-                                }
-                            } catch (e) {
-                                // Not JSON, try simple patterns
-                                const rawData = result.rawData.trim();
-                                
-                                // Check for UUID patterns (for books)
-                                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawData)) {
-                                    console.log('📚 [CIRCULATION] UUID pattern detected:', rawData);
-                                    processCirculation(rawData);
-                                    recognizedData = true;
-                                    break;
-                                }
+                            // Check if it's book data
+                            if (jsonData.uuid || jsonData.bookId || jsonData.book_id) {
+                                const bookUuid = jsonData.uuid || jsonData.bookId || jsonData.book_id;
+                                console.log('📚 [CIRCULATION] Book UUID extracted from JSON:', bookUuid);
+                                processCirculation(bookUuid);
+                                recognizedData = true;
+                                break;
                             }
+                        } catch (e) {
+                            // Not JSON, try using our comprehensive identifier processor
+                            const rawData = result.rawData.trim();
+                            console.log('� [CIRCULATION] Using processBookIdentifier for raw data:', rawData);
+                            
+                            // Use the comprehensive identifier processor which handles UUIDs, ISBNs, etc.
+                            await processBookIdentifier(rawData);
+                            recognizedData = true;
+                            break;
                         }
                     }
-                    
-                    if (!recognizedData) {
-                        console.warn('⚠️ [CIRCULATION] QR result contains no recognizable book data:', qrResult);
-                        safeToast('showError', 'QR code format not recognized. Please scan a valid book QR code.');
-                    }
+                }
+                
+                if (!recognizedData) {
+                    console.warn('⚠️ [CIRCULATION] No recognizable book data found in scan results');
+                    safeToast('showError', `
+                        No valid book identifier detected in scan.<br>
+                        <small>Please scan a QR code with book UUID, an ISBN barcode, or enter the identifier manually.</small>
+                    `);
                 }
             } else {
                 console.warn('⚠️ [CIRCULATION] No results found');
-                safeToast('showError', 'No QR code detected');
+                safeToast('showError', 'No code detected');
             }
         }
 
@@ -1327,11 +1336,11 @@
         }
 
         // Process manual entry
-        function processManualEntry() {
-            const bookUuid = document.getElementById('manualBookUuid').value.trim();
+        async function processManualEntry() {
+            const bookIdentifier = document.getElementById('manualBookIdentifier').value.trim();
             
-            if (!bookUuid) {
-                safeToast('showWarning', 'Please enter a book UUID');
+            if (!bookIdentifier) {
+                safeToast('showWarning', 'Please enter a book identifier (UUID, ISBN, or barcode)');
                 return;
             }
             
@@ -1339,8 +1348,150 @@
             const modal = bootstrap.Modal.getInstance(document.getElementById('manualEntryModal'));
             modal.hide();
             
-            // Process the UUID
-            processCirculation(bookUuid);
+            // Determine what type of identifier this is and process accordingly
+            await processBookIdentifier(bookIdentifier);
+        }
+        
+        // Process book identifier (UUID, ISBN, or barcode)
+        async function processBookIdentifier(identifier) {
+            console.log('🔍 [IDENTIFIER] Processing book identifier:', identifier);
+            
+            // Try to determine what type of identifier this is
+            const trimmedId = identifier.trim();
+            
+            // Check if it's a UUID pattern
+            if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedId)) {
+                console.log('📚 [IDENTIFIER] Recognized as UUID, processing circulation');
+                await processCirculation(trimmedId);
+                return;
+            }
+            
+            // Check if it's an ISBN (using our ISBN utilities)
+            if (typeof ISBNUtils !== 'undefined') {
+                const extractedIsbn = ISBNUtils.extractIsbn(trimmedId);
+                if (extractedIsbn) {
+                    console.log('📖 [IDENTIFIER] Recognized as ISBN:', extractedIsbn);
+                    await processISBNForCirculation(extractedIsbn);
+                    return;
+                }
+            }
+            
+            // Try simple ISBN pattern recognition as fallback
+            const cleanedId = trimmedId.replace(/[-\s]/g, '');
+            if (/^(978|979)?[0-9]{10,13}$/i.test(cleanedId)) {
+                console.log('📖 [IDENTIFIER] Looks like ISBN, attempting processing:', cleanedId);
+                await processISBNForCirculation(cleanedId);
+                return;
+            }
+            
+            // If nothing else works, try as UUID anyway (in case it's a shortened UUID)
+            if (/^[0-9a-f-]+$/i.test(trimmedId)) {
+                console.log('🎲 [IDENTIFIER] Trying as UUID anyway:', trimmedId);
+                await processCirculation(trimmedId);
+                return;
+            }
+            
+            // Could not recognize the identifier
+            safeToast('showError', `
+                Could not recognize identifier format: "${trimmedId}"<br>
+                <small>Please enter a valid Book UUID or ISBN</small>
+            `);
+        }
+        
+        // Process ISBN for circulation (lookup book by ISBN)
+        async function processISBNForCirculation(isbn) {
+            console.log('📖 [ISBN] Processing ISBN for circulation:', isbn);
+            
+            try {
+                // First try to find the book by ISBN in our library
+                const response = await fetch(`/api/books/isbn/${isbn}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.book && data.book.uuid) {
+                        console.log('✅ [ISBN] Found book in library:', data.book.title);
+                        safeToast('showInfo', `Found book: ${data.book.title}`);
+                        
+                        // Process circulation with the found book's UUID
+                        await processCirculation(data.book.uuid);
+                        return;
+                    }
+                }
+                
+                // If not found in our library, try to show book info and offer to add it
+                console.log('📖 [ISBN] Book not found in library, attempting to fetch book info...');
+                await handleISBNNotInLibrary(isbn);
+                
+            } catch (error) {
+                console.error('❌ [ISBN] Error processing ISBN:', error);
+                safeToast('showError', `Error looking up ISBN: ${error.message}`);
+            }
+        }
+        
+        // Handle ISBN when book is not in library
+        async function handleISBNNotInLibrary(isbn) {
+            console.log('📖 [ISBN] Handling ISBN not in library:', isbn);
+            
+            try {
+                // Try to get book information from external sources
+                const response = await fetch('/api/books/isbn-lookup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isbn: isbn })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.book) {
+                        // Show book info and offer to add it
+                        showISBNBookNotFoundDialog(data.book, isbn);
+                        return;
+                    }
+                }
+                
+                // Fallback: show simple not found message
+                safeToast('showWarning', `
+                    Book with ISBN ${isbn} not found in library.<br>
+                    <small>The book may need to be added to the library first before circulation.</small>
+                `);
+                
+            } catch (error) {
+                console.error('❌ [ISBN] Error looking up book info:', error);
+                safeToast('showError', `
+                    Book with ISBN ${isbn} not found in library.<br>
+                    <small>Unable to retrieve book information. The book may need to be added manually.</small>
+                `);
+            }
+        }
+        
+        // Show dialog for ISBN book not found in library
+        function showISBNBookNotFoundDialog(bookInfo, isbn) {
+            const resultsDiv = document.getElementById('circulationResults');
+            if (resultsDiv) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-book me-2"></i>ISBN Book Found (Not in Library)</h6>
+                        <p><strong>Title:</strong> ${bookInfo.title || 'Unknown'}</p>
+                        <p><strong>Author:</strong> ${bookInfo.author || 'Unknown'}</p>
+                        <p><strong>ISBN:</strong> ${isbn}</p>
+                        <div class="mt-3">
+                            <button class="btn btn-success me-2" onclick="addBookToLibrary('${isbn}')">
+                                <i class="fas fa-plus me-1"></i>Add to Library & Process
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearResults()">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            This book is not currently in the library. You can add it and then proceed with circulation.
+                        </small>
+                    </div>
+                `;
+            }
         }
         
         // Missing unified scanner handler functions
