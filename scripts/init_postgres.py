@@ -13,13 +13,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
 from models import Book, Member, Transaction
+from sqlalchemy import text
 
 def wait_for_db(max_retries=30):
     """Wait for database to be ready"""
     for attempt in range(max_retries):
         try:
             with app.app_context():
-                db.session.execute('SELECT 1')
+                db.session.execute(text('SELECT 1'))
                 print("✅ Database connection successful")
                 return True
         except Exception as e:
