@@ -4,81 +4,13 @@ A modern, feature-rich library management system with advanced QR code and ISBN 
 
 ## ✨ Features
 
-### � Book Management
+### 📚 Book Management
 - **Comprehensive Book Database**: Store detailed book information (title, author, ISBN, publisher, etc.)
-- **ISBN Barcode Scanning**: Automatic book identification and me## ⚡ Development Workflow
-
-### Feature Development
-1. **Setup**: Clone repo and set up development environment
-2. **Database**: Run `python scripts/init_db.py` for sample data
-3. **Testing**: Use `/system-test` page for manual testing
-4. **Debugging**: Enable debug mode with `python main.py --debug`
-
-### Production Deployment Workflow
-1. **Development**: Complete feature development and testing locally
-2. **Commit**: Push changes to GitHub repository
-3. **Cloud Access**: SSH to your cloud server
-4. **Update Code**: 
-   ```bash
-   cd /path/to/integrated-library-system
-   git pull origin main
-   ```
-5. **Deploy**: Execute deployment script manually
-   ```bash
-   # For updates with potential database changes
-   ./scripts/deploy-cloudflare-enhanced.sh upgrade
-   
-   # For simple restarts
-   ./scripts/deploy-cloudflare-enhanced.sh
-   ```
-6. **Verify**: Check health and functionality
-   ```bash
-   curl http://localhost:5000/health
-   docker-compose logs -f library-app
-   ```
-
-### Manual Execution Benefits
-- **Full Control**: Monitor each step of the deployment process
-- **Debugging**: Immediate access to logs and error messages
-- **Customization**: Ability to modify deployment steps as needed
-- **Security**: Direct server access without automated triggers
-- **Flexibility**: Choose when and how to deploy updates
-
-### Deployment Script Options
-
-#### Enhanced Deployment Script
-```bash
-# Initial setup (first deployment)
-./scripts/deploy-cloudflare-enhanced.sh initial
-
-# Regular updates (after git pull)
-./scripts/deploy-cloudflare-enhanced.sh upgrade
-
-# Simple restart (no code changes)
-./scripts/deploy-cloudflare-enhanced.sh restart
-```
-
-#### Quick Database Fixes
-```bash
-# Fix missing columns or schema issues
-./scripts/quick-fix-thumbnail-column.sh
-```
-
-#### Environment-Specific Commands
-**Linux/macOS:**
-```bash
-chmod +x scripts/*.sh
-./scripts/deploy-cloudflare-enhanced.sh upgrade
-```
-
-**Windows (if using Windows Server):**
-```powershell
-.\scripts\deploy-cloudflare-enhanced.bat upgrade
-.\scripts\quick-fix-thumbnail-column.bat
-```
+- **ISBN Barcode Scanning**: Automatic book identification and metadata lookup
 - **Multi-Service ISBN Lookup**: Fetches book data from Google Books and other sources
 - **QR Code Generation**: Automatic QR code generation for each book
 - **Inventory Tracking**: Track total copies and availability
+- **Book Thumbnails**: Display book cover images from Google Books API
 
 ### 👥 Member Management  
 - **Member Registration**: Complete member profiles with contact information
@@ -346,23 +278,6 @@ docker-compose exec library-db pg_dump -U libraryuser library > backup.sql
 docker-compose down
 ```
 
-### Database Management Scripts
-```bash
-# Initialize with sample data
-docker-compose exec library-app python scripts/init_postgres.py
-
-# Database migrations (if needed)
-docker-compose exec library-app python scripts/migrate_books_categories.py
-
-# Universal thumbnail column migration
-docker-compose exec library-app python scripts/migrate_add_thumbnail_url_universal.py
-
-# Migrate existing data
-docker-compose exec library-app python scripts/migrate_books_genre_to_categories.py
-docker-compose exec library-app python scripts/migrate_employee_code.py
-docker-compose exec library-app python scripts/migrate_members.py
-```
-
 ### Production Monitoring Commands
 ```bash
 # Real-time application logs
@@ -399,7 +314,7 @@ docker stats
 - **SSL/TLS**: HTTPS support with certificate management
 - **Rate Limiting**: Built-in protection against abuse
 
-## � API Endpoints
+## 🔗 API Endpoints
 
 ### Books
 - `GET /api/books` - List books with pagination and search
@@ -486,7 +401,7 @@ library-management-system/
     └── logs/                   # Application logs
 ```
 
-## � Development Workflow
+## ⚡ Development Workflow
 
 ### Feature Development
 1. **Setup**: Clone repo and set up development environment
@@ -494,11 +409,68 @@ library-management-system/
 3. **Testing**: Use `/system-test` page for manual testing
 4. **Debugging**: Enable debug mode with `python main.py --debug`
 
-### Production Deployment
-1. **Environment**: Configure `.env.production` with secure values
-2. **Build**: Run deployment script `./scripts/deploy-cloudflare.sh`
-3. **Monitor**: Check health endpoints and Docker logs
-4. **Backup**: Regular database backups with provided commands
+### Production Deployment Workflow
+1. **Development**: Complete feature development and testing locally
+2. **Commit**: Push changes to GitHub repository
+3. **Cloud Access**: SSH to your cloud server
+4. **Update Code**: 
+   ```bash
+   cd /path/to/integrated-library-system
+   git pull origin main
+   ```
+5. **Deploy**: Execute deployment script manually
+   ```bash
+   # For updates with potential database changes
+   ./scripts/deploy-cloudflare-enhanced.sh upgrade
+   
+   # For simple restarts
+   ./scripts/deploy-cloudflare-enhanced.sh
+   ```
+6. **Verify**: Check health and functionality
+   ```bash
+   curl http://localhost:5000/health
+   docker-compose logs -f library-app
+   ```
+
+### Manual Execution Benefits
+- **Full Control**: Monitor each step of the deployment process
+- **Debugging**: Immediate access to logs and error messages
+- **Customization**: Ability to modify deployment steps as needed
+- **Security**: Direct server access without automated triggers
+- **Flexibility**: Choose when and how to deploy updates
+
+### Deployment Script Options
+
+#### Enhanced Deployment Script
+```bash
+# Initial setup (first deployment)
+./scripts/deploy-cloudflare-enhanced.sh initial
+
+# Regular updates (after git pull)
+./scripts/deploy-cloudflare-enhanced.sh upgrade
+
+# Simple restart (no code changes)
+./scripts/deploy-cloudflare-enhanced.sh restart
+```
+
+#### Quick Database Fixes
+```bash
+# Fix missing columns or schema issues
+./scripts/quick-fix-thumbnail-column.sh
+```
+
+#### Environment-Specific Commands
+**Linux/macOS:**
+```bash
+chmod +x scripts/*.sh
+./scripts/deploy-cloudflare-enhanced.sh upgrade
+```
+
+**Windows (if using Windows Server):**
+```powershell
+.\scripts\deploy-cloudflare-enhanced.bat upgrade
+.\scripts\quick-fix-thumbnail-column.bat
+```
 
 ## 🤝 Contributing
 
@@ -625,4 +597,14 @@ docker-compose exec -T library-db psql -U libraryuser library < backup_previous.
 
 ---
 
-**Ready to revolutionize your library management? Deploy in minutes with Docker! 🚀**
+**Ready to revolutionize your library management? Deploy manually with full control! 🚀**
+
+## 🙏 Acknowledgments
+
+- **Flask**: Web framework and ecosystem
+- **PostgreSQL**: Robust database system
+- **SQLAlchemy**: Object-relational mapping
+- **ZXing**: Barcode scanning library
+- **OpenCV & pyzbar**: Computer vision libraries
+- **Bootstrap**: Responsive UI framework
+- **Font Awesome**: Icon library
