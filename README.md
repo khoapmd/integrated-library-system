@@ -97,7 +97,7 @@ See `docs/CLOUDFLARE_DEPLOYMENT.md` for detailed setup instructions.
 ## 💻 Local Development
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.12
 - pip package manager
 
 ### Setup
