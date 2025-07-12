@@ -18,6 +18,7 @@ class Book(db.Model):
     description = db.Column(db.Text, nullable=True)
     language = db.Column(db.String(50), nullable=True, default='English')
     pages = db.Column(db.Integer, nullable=True)
+    thumbnail_url = db.Column(db.String(500), nullable=True)  # Book cover image URL
     location = db.Column(db.String(100), nullable=True)  # Shelf location
     status = db.Column(db.String(20), nullable=False, default='available')  # available, borrowed, reserved, damaged
     copies_total = db.Column(db.Integer, nullable=False, default=1)
@@ -41,6 +42,7 @@ class Book(db.Model):
             'description': self.description,
             'language': self.language,
             'pages': self.pages,
+            'thumbnail_url': self.thumbnail_url,
             'location': self.location,
             'status': self.status,
             'copies_total': self.copies_total,

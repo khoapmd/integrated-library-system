@@ -198,6 +198,7 @@ def add_book():
                 description=data.get('description'),
                 language=data.get('language', 'English'),
                 pages=data.get('pages'),
+                thumbnail_url=data.get('thumbnail_url'),
                 location=data.get('location'),
                 copies_total=data.get('copies_total', 1),
                 copies_available=data.get('copies_available', 1)
