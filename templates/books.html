@@ -650,7 +650,8 @@
                 if (result.success) {
                     bootstrap.Modal.getInstance(document.getElementById('addBookModal')).hide();
                     form.reset();
-                    loadBooks(currentPage, currentSearch, currentFilter);
+                    // Stay on the same page after adding the book
+                    loadBooks(currentPage || 1, currentSearch, currentFilter);
                     showSuccess('Book added successfully!');
                 } else {
                     showError('Error adding book: ' + result.message);
@@ -1021,8 +1022,8 @@
                     // Close modal
                     bootstrap.Modal.getInstance(document.getElementById('editBookModal')).hide();
                     
-                    // Reload books list
-                    loadBooks(currentPage, currentSearch, currentFilter);
+                    // Reload books list while staying on the same page
+                    loadBooks(currentPage || 1, currentSearch, currentFilter);
                 } else {
                     showError('Error updating book: ' + result.message);
                 }
@@ -1169,6 +1170,12 @@
         // ISBN Scanner for Add Book Modal
         let isbnScanner = null;
 
+        // Clear edit form when modal is hidden
+        document.getElementById('editBookModal').addEventListener('hidden.bs.modal', function() {
+            // Clear the cover preview
+            document.getElementById('editCoverPreview').src = '/static/img/logo.svg';
+        });
+
         // Initialize ISBN scanner when modal is shown
         document.getElementById('addBookModal').addEventListener('shown.bs.modal', function() {
             // Ensure copy fields have default values
@@ -1204,6 +1211,8 @@
                 // Clear form
                 clearForm();
             }
+            // Clear the cover preview
+            document.getElementById('coverPreview').src = '/static/img/logo.svg';
         });
 
         // Handle ISBN scan results
