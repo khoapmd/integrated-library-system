@@ -27,8 +27,8 @@
         <div class="row mb-4">
             <div class="col-md-8">
                 <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Search books by title, author, or ISBN..." id="searchInput">
-                    <button class="btn btn-outline-secondary" type="button" onclick="searchBooks()">
+                    <input type="text" class="form-control" placeholder="Search books by title, author, or ISBN..." id="searchInput" autofocus>
+                    <button class="btn btn-outline-secondary" type="button" id="searchButton">
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
@@ -502,12 +502,15 @@
         // Load books
         async function loadBooks(page = 1, search = '', status = '') {
             try {
-                let url = `/api/books?page=${page}&per_page=12`;
+                // Ensure we have the full URL path when deployed
+                const baseUrl = window.location.origin;
+                let url = `${baseUrl}/api/books?page=${page}&per_page=12`;
                 if (search) {
-                    // Add search type parameter for backend to handle different search modes
-                    url += `&search=${encodeURIComponent(search)}&search_type=smart`;
+                    // Properly encode search terms and handle special characters
+                    const encodedSearch = encodeURIComponent(search.trim());
+                    url += `&search=${encodedSearch}&search_type=smart`;
                 }
-                if (status) url += `&status=${status}`;
+                if (status) url += `&status=${encodeURIComponent(status)}`;
 
                 const response = await fetch(url);
                 const data = await response.json();
@@ -620,15 +623,60 @@
             pagination.innerHTML = html;
         }
 
+        // Initialize search functionality when document loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            
+            // Focus search input on page load
+            searchInput.focus();
+            
+            // Automatically search as user types with debouncing
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                // Clear previous timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                
+                // Set new timeout for search
+                searchTimeout = setTimeout(() => {
+                    searchBooks();
+                }, 300); // Wait 300ms after user stops typing
+            });
+
+            // Maintain focus when clicking anywhere on the page
+            document.addEventListener('click', function() {
+                searchInput.focus();
+            });
+        });
+
         // Search and filter functions
         function searchBooks() {
-            // Get the search input and normalize it
-            let searchInput = document.getElementById('searchInput').value;
-            // Trim whitespace and convert to lowercase for case-insensitive search
-            currentSearch = searchInput.trim().toLowerCase();
-            // Reset to first page when searching
-            currentPage = 1;
-            loadBooks(currentPage, currentSearch, currentFilter);
+            try {
+                // Get the search input element and value
+                const searchElement = document.getElementById('searchInput');
+                let searchValue = searchElement.value;
+                
+                // Basic input sanitization
+                searchValue = searchValue.replace(/[^\w\s-]/gi, '').trim();
+                
+                // Trim whitespace and convert to lowercase for case-insensitive search
+                currentSearch = searchValue.toLowerCase();
+                
+                // Reset to first page when searching
+                currentPage = 1;
+                
+                // Keep the input enabled during search
+                loadBooks(currentPage, currentSearch, currentFilter)
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        showError('Error performing search');
+                    });
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Error performing search. Please try again.');
+                document.getElementById('searchInput').disabled = false;
+            }
         }
 
         function filterBooks() {
@@ -1145,12 +1193,30 @@
             }
         }
 
-        // Event listeners
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        // Event listeners for real-time search
+        const searchInput = document.getElementById('searchInput');
+        
+        // Handle search functionality
+        searchInput.addEventListener('input', debounce(function() {
+            searchBooks();
+        }, 500)); // Increased debounce time to 500ms for better performance
+
+        // Prevent form submission on enter key
+        searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
                 searchBooks();
             }
         });
+
+        // Debounce function to limit how often the search is performed
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, arguments), wait);
+            };
+        }
 
         // Clean up scanner when modal is hidden
         document.getElementById('isbnScannerModal').addEventListener('hidden.bs.modal', function() {

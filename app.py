@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
+from sqlalchemy import func
 from models import db, Book, Member, Transaction
 from utils import QRCodeManager, ISBNScanner, generate_member_id, calculate_fine
 from config import config, Config
@@ -136,10 +137,11 @@ def get_books():
     query = Book.query
     
     if search:
+        search = search.lower()  # Convert search term to lowercase
         query = query.filter(
-            (Book.title.contains(search)) |
-            (Book.author.contains(search)) |
-            (Book.isbn.contains(search))
+            (func.lower(Book.title).contains(search)) |
+            (func.lower(Book.author).contains(search)) |
+            (func.lower(Book.isbn).contains(search))
         )
     
     books = query.paginate(
