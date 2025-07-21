@@ -19,10 +19,11 @@ config.ini
 secrets.json
 
 # Database files
+# Ignore all databases except test database
 *.db
+!instance/library.db
 *.sqlite
 *.sqlite3
-instance/
 
 # Member cards and uploads
 member_cards/*.png
