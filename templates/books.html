@@ -662,9 +662,9 @@
                     document.getElementById('description').value = book.description || '';
                     if (book.pages || book.pageCount) document.getElementById('pages').value = book.pages || book.pageCount;
                     
-                    // Set thumbnail URL if available
-                    if (book.cover_url) {
-                        document.getElementById('thumbnail_url').value = book.cover_url;
+                    // Set thumbnail URL if available (check both possible property names)
+                    if (book.cover_url || book.thumbnail_url) {
+                        document.getElementById('thumbnail_url').value = book.cover_url || book.thumbnail_url;
                     }
                     
                     // Handle categories (can be array or string)
@@ -1231,6 +1231,11 @@
                     document.getElementById('language').value = bookInfo.language || 'English';
                     document.getElementById('pages').value = bookInfo.pages || bookInfo.pageCount || '';
                     document.getElementById('description').value = bookInfo.description || '';
+                    
+                    // Set thumbnail URL if available
+                    if (bookInfo.cover_url || bookInfo.thumbnail_url) {
+                        document.getElementById('thumbnail_url').value = bookInfo.cover_url || bookInfo.thumbnail_url;
+                    }
                     
                     // Handle categories (can be array or string)
                     if (bookInfo.categories) {
