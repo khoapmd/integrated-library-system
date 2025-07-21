@@ -553,7 +553,7 @@
                                         </div>
                                         <div class="col-4">
                                             ${book.thumbnail_url ? `
-                                                <img src="${book.thumbnail_url}" alt="${book.title}" 
+                                                <img src="${book.thumbnail_url.replace('http:', 'https:')}" alt="${book.title}" 
                                                      class="img-fluid rounded h-100" 
                                                      style="width: 100%; object-fit: cover;" 
                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
@@ -889,7 +889,7 @@
                     document.getElementById('editThumbnailUrl').value = book.thumbnail_url || '';
                     document.getElementById('editIsbn').value = book.isbn || '';
                     // Update cover preview
-                    document.getElementById('editCoverPreview').src = book.thumbnail_url || '/static/img/logo.svg';
+                    document.getElementById('editCoverPreview').src = (book.thumbnail_url ? book.thumbnail_url.replace('http:', 'https:') : '/static/img/logo.svg');
                     document.getElementById('editTitle').value = book.title || '';
                     document.getElementById('editAuthor').value = book.author || '';
                     document.getElementById('editPublisher').value = book.publisher || '';
@@ -1076,7 +1076,7 @@
                     
                     // Update thumbnail URL if available
                     if (bookInfo.cover_url || bookInfo.thumbnail_url) {
-                        const thumbnailUrl = bookInfo.cover_url || bookInfo.thumbnail_url;
+                        const thumbnailUrl = (bookInfo.cover_url || bookInfo.thumbnail_url).replace('http:', 'https:');
                         document.getElementById('editThumbnailUrl').value = thumbnailUrl;
                         document.getElementById('editCoverPreview').src = thumbnailUrl;
                     } else {
