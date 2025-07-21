@@ -33,12 +33,18 @@
                     </button>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-2">
                 <select class="form-select" id="statusFilter" onchange="filterBooks()">
                     <option value="">All Status</option>
                     <option value="available">Available</option>
                     <option value="borrowed">Borrowed</option>
                     <option value="reserved">Reserved</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="sortOrder" onchange="sortBooks()">
+                    <option value="asc" selected>A to Z</option>
+                    <option value="desc">Z to A</option>
                 </select>
             </div>
         </div>
@@ -497,7 +503,9 @@
         let currentPage = 1;
         let currentSearch = '';
         let currentFilter = '';
+        let currentSort = 'asc'; // Set default sort to ascending
         let currentQRCode = '';
+        let currentBooks = [];
 
         // Load books
         async function loadBooks(page = 1, search = '', status = '') {
@@ -515,7 +523,15 @@
                 const response = await fetch(url);
                 const data = await response.json();
 
-                displayBooks(data.books);
+                // Store the current books for sorting
+                currentBooks = data.books;
+                
+                // Apply current sort if any
+                if (currentSort) {
+                    sortBooksList(currentBooks, currentSort);
+                }
+
+                displayBooks(currentBooks);
                 displayPagination(data.current_page, data.pages, data.total);
             } catch (error) {
                 console.error('Error loading books:', error);
@@ -643,11 +659,6 @@
                     searchBooks();
                 }, 300); // Wait 300ms after user stops typing
             });
-
-            // Maintain focus when clicking anywhere on the page
-            document.addEventListener('click', function() {
-                searchInput.focus();
-            });
         });
 
         // Search and filter functions
@@ -683,6 +694,32 @@
             currentFilter = document.getElementById('statusFilter').value;
             currentPage = 1;
             loadBooks(currentPage, currentSearch, currentFilter);
+        }
+
+        // Sort books by title
+        function sortBooks() {
+            const sortOrder = document.getElementById('sortOrder').value;
+            currentSort = sortOrder;
+            
+            if (currentBooks.length > 0) {
+                sortBooksList(currentBooks, currentSort);
+                displayBooks(currentBooks);
+            }
+        }
+
+        // Helper function to sort books array
+        function sortBooksList(books, sortOrder) {
+            books.sort((a, b) => {
+                const titleA = a.title.toLowerCase();
+                const titleB = b.title.toLowerCase();
+                
+                if (sortOrder === 'asc') {
+                    return titleA.localeCompare(titleB);
+                } else if (sortOrder === 'desc') {
+                    return titleB.localeCompare(titleA);
+                }
+                return 0;
+            });
         }
 
         // Book management functions
@@ -921,9 +958,25 @@
             }
         }
 
+        // Store modal instance
+        let editModalInstance = null;
+
         function editBook(bookId) {
-            // Load book details and show edit modal
-            loadBookForEdit(bookId);
+            // Get or create modal instance
+            if (!editModalInstance) {
+                const modalEl = document.getElementById('editBookModal');
+                editModalInstance = new bootstrap.Modal(modalEl, {
+                    backdrop: true,
+                    keyboard: true,
+                    focus: true
+                });
+            }
+
+            // Load data first
+            loadBookForEdit(bookId).then(() => {
+                // Show modal after data is loaded
+                editModalInstance.show();
+            });
         }
 
         async function loadBookForEdit(bookId) {
@@ -956,8 +1009,6 @@
                     // Clear any previous validation warnings
                     document.getElementById('editValidationWarnings').innerHTML = '';
                     
-                    // Show the modal
-                    new bootstrap.Modal(document.getElementById('editBookModal')).show();
                 } else {
                     showError('Error loading book details: ' + book.message);
                 }
