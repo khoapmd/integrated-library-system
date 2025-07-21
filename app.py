@@ -260,6 +260,18 @@ def delete_book(book_id):
     book = Book.query.get_or_404(book_id)
     
     try:
+        # Check if book has any transactions
+        transaction_count = Transaction.query.filter_by(book_id=book_id).count()
+        
+        if transaction_count > 0:
+            return jsonify({
+                'success': False,
+                'message': f'Cannot delete book "{book.title}". This book has {transaction_count} transaction record(s) in the system. Consider marking it as "damaged" or "lost" instead of deleting it.',
+                'has_transactions': True,
+                'transaction_count': transaction_count
+            }), 400
+        
+        # If no transactions, safe to delete
         db.session.delete(book)
         db.session.commit()
         
@@ -524,11 +536,26 @@ def checkout_book():
                 'message': 'Book not found'
             }), 404
         
-        # Check if book is available
+        # Check if book is available for checkout
         if book.copies_available <= 0:
             return jsonify({
                 'success': False,
                 'message': 'No copies available for checkout'
+            }), 400
+            
+        # Check if book status allows checkout
+        unavailable_statuses = ['unavailable', 'damaged', 'lost', 'maintenance', 'archived']
+        if book.status in unavailable_statuses:
+            status_messages = {
+                'unavailable': 'This book is temporarily unavailable for checkout',
+                'damaged': 'This book is damaged and cannot be checked out',
+                'lost': 'This book is marked as lost and cannot be checked out',
+                'maintenance': 'This book is under maintenance and cannot be checked out',
+                'archived': 'This book is archived and cannot be checked out'
+            }
+            return jsonify({
+                'success': False,
+                'message': status_messages.get(book.status, f'Book status "{book.status}" does not allow checkout')
             }), 400
         
         # Find the member
@@ -990,6 +1017,21 @@ def borrow_book():
         return jsonify({
             'success': False,
             'message': 'No copies available'
+        }), 400
+        
+    # Check if book status allows checkout
+    unavailable_statuses = ['unavailable', 'damaged', 'lost', 'maintenance', 'archived']
+    if book.status in unavailable_statuses:
+        status_messages = {
+            'unavailable': 'This book is temporarily unavailable for checkout',
+            'damaged': 'This book is damaged and cannot be checked out',
+            'lost': 'This book is marked as lost and cannot be checked out',
+            'maintenance': 'This book is under maintenance and cannot be checked out',
+            'archived': 'This book is archived and cannot be checked out'
+        }
+        return jsonify({
+            'success': False,
+            'message': status_messages.get(book.status, f'Book status "{book.status}" does not allow checkout')
         }), 400
     
     try:

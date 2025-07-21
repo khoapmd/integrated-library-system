@@ -39,6 +39,11 @@
                     <option value="available">Available</option>
                     <option value="borrowed">Borrowed</option>
                     <option value="reserved">Reserved</option>
+                    <option value="unavailable">Unavailable</option>
+                    <option value="damaged">Damaged</option>
+                    <option value="lost">Lost</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="archived">Archived</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -342,8 +347,15 @@
                                                 <option value="available">Available</option>
                                                 <option value="borrowed">Borrowed</option>
                                                 <option value="reserved">Reserved</option>
-                                                <option value="maintenance">Maintenance</option>
+                                                <option value="damaged">Damaged</option>
+                                                <option value="lost">Lost</option>
+                                                <option value="unavailable">Unavailable</option>
+                                                <option value="maintenance">Under Maintenance</option>
+                                                <option value="archived">Archived</option>
                                             </select>
+                                            <small class="form-text text-muted">
+                                                Use <strong>"Damaged"</strong> for physically damaged books, <strong>"Lost"</strong> for books that can't be found, <strong>"Unavailable"</strong> to temporarily remove from circulation, or <strong>"Archived"</strong> for books removed from active collection.
+                                            </small>
                                         </div>
                                         
                                         <!-- Validation Warnings -->
@@ -507,6 +519,21 @@
         let currentQRCode = '';
         let currentBooks = [];
 
+        // Helper function to get appropriate badge color for book status
+        function getStatusBadgeColor(status) {
+            const statusColors = {
+                'available': 'success',      // Green - ready for checkout
+                'borrowed': 'danger',        // Red - currently checked out
+                'reserved': 'warning',       // Yellow - reserved but not checked out
+                'unavailable': 'secondary',  // Gray - temporarily unavailable
+                'damaged': 'danger',         // Red - damaged, can't circulate
+                'lost': 'dark',             // Dark - lost, can't circulate
+                'maintenance': 'info',       // Blue - under maintenance
+                'archived': 'secondary'      // Gray - archived, out of circulation
+            };
+            return statusColors[status] || 'warning'; // Default to warning for unknown statuses
+        }
+
         // Load books
         async function loadBooks(page = 1, search = '', status = '') {
             try {
@@ -568,7 +595,7 @@
                                 <small>Location: ${book.location || 'Not specified'}</small>
                             </p>
                             <div class="mt-auto">
-                                <span class="badge bg-${book.status === 'available' ? 'success' : book.status === 'borrowed' ? 'danger' : 'warning'}">
+                                <span class="badge bg-${getStatusBadgeColor(book.status)}">
                                     ${book.status}
                                 </span>
                                 <br>
@@ -631,7 +658,7 @@
                                                 <small>Location: ${book.location || 'Not specified'}</small>
                                             </p>
                                             <div class="mt-auto">
-                                                <span class="badge bg-${book.status === 'available' ? 'success' : book.status === 'borrowed' ? 'danger' : 'warning'}">
+                                                <span class="badge bg-${getStatusBadgeColor(book.status)}">
                                                     ${book.status}
                                                 </span>
                                                 <br>
@@ -1316,12 +1343,101 @@
                     loadBooks(currentPage, currentSearch, currentFilter);
                     showSuccess('Book deleted successfully!');
                 } else {
-                    showError('Error deleting book: ' + result.message);
+                    if (result.has_transactions) {
+                        // Special handling for books with transactions
+                        const bookElement = document.querySelector(`[data-book-id="${bookId}"]`);
+                        const bookTitle = bookElement ? bookElement.querySelector('.card-title').textContent : 'Unknown Book';
+                        
+                        showTransactionWarning(
+                            `Cannot delete "${bookTitle}"`,
+                            result.message,
+                            bookId
+                        );
+                    } else {
+                        showError('Error deleting book: ' + result.message);
+                    }
                 }
             } catch (error) {
                 console.error('Error deleting book:', error);
                 showError('Error deleting book');
             }
+        }
+
+        function showTransactionWarning(title, message, bookId) {
+            // Create modal HTML
+            const modalHtml = `
+                <div class="modal fade" id="transactionWarningModal" tabindex="-1" aria-labelledby="transactionWarningModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title d-flex align-items-center" id="transactionWarningModalLabel">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>${title}
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning border-0 mb-3">
+                                    <p class="mb-0">${message}</p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-2">Alternative Actions:</h6>
+                                        <ul class="mb-0">
+                                            <li>Mark the book as <strong>"Damaged"</strong> if it's physically damaged</li>
+                                            <li>Mark the book as <strong>"Lost"</strong> if it can't be found</li>
+                                            <li>Change the status to <strong>"Unavailable"</strong> to temporarily remove from circulation</li>
+                                            <li>Update the location to <strong>"Archived"</strong> and set status to <strong>"Archived"</strong></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" onclick="editBookFromWarning(${bookId})">
+                                    <i class="fas fa-edit me-1"></i>Edit Book Status
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('transactionWarningModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('transactionWarningModal'));
+            modal.show();
+            
+            // Clean up modal after it's hidden
+            document.getElementById('transactionWarningModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            }, { once: true });
+        }
+
+        function editBookFromWarning(bookId) {
+            // Close the warning modal first
+            const warningModal = bootstrap.Modal.getInstance(document.getElementById('transactionWarningModal'));
+            if (warningModal) {
+                warningModal.hide();
+            }
+            
+            // Open the edit book modal
+            setTimeout(() => {
+                editBook(bookId);
+            }, 300); // Small delay to ensure warning modal is fully closed
+        }
+
+        function dismissWarning(button) {
+            button.closest('.alert').remove();
         }
 
         // Event listeners for real-time search
@@ -1502,7 +1618,7 @@
                             <small>
                                 <strong>Current copies:</strong> ${existingBook.copies_total} total, ${existingBook.copies_available} available<br>
                                 <strong>Location:</strong> ${existingBook.location || 'Not specified'}<br>
-                                <strong>Status:</strong> <span class="badge bg-${existingBook.status === 'available' ? 'success' : 'warning'}">${existingBook.status}</span>
+                                <strong>Status:</strong> <span class="badge bg-${getStatusBadgeColor(existingBook.status)}">${existingBook.status}</span>
                             </small>
                             <div class="mt-2">
                                 <p class="mb-0 text-info">
