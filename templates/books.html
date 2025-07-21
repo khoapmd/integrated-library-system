@@ -503,7 +503,10 @@
         async function loadBooks(page = 1, search = '', status = '') {
             try {
                 let url = `/api/books?page=${page}&per_page=12`;
-                if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (search) {
+                    // Add search type parameter for backend to handle different search modes
+                    url += `&search=${encodeURIComponent(search)}&search_type=smart`;
+                }
                 if (status) url += `&status=${status}`;
 
                 const response = await fetch(url);
@@ -619,7 +622,11 @@
 
         // Search and filter functions
         function searchBooks() {
-            currentSearch = document.getElementById('searchInput').value.trim();
+            // Get the search input and normalize it
+            let searchInput = document.getElementById('searchInput').value;
+            // Trim whitespace and convert to lowercase for case-insensitive search
+            currentSearch = searchInput.trim().toLowerCase();
+            // Reset to first page when searching
             currentPage = 1;
             loadBooks(currentPage, currentSearch, currentFilter);
         }
