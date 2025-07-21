@@ -523,6 +523,9 @@
                 const response = await fetch(url);
                 const data = await response.json();
 
+                // Update current page to reflect the actual page we're on
+                currentPage = data.current_page || page;
+
                 // Store the current books for sorting
                 currentBooks = data.books;
                 
@@ -540,6 +543,71 @@
             }
         }
 
+        // Function to update a single book card
+        function updateBookCard(book) {
+            // Find the book card by data-book-id attribute
+            const bookCard = document.querySelector(`.book-card[data-book-id="${book.id}"]`);
+            if (bookCard) {
+                // Update the entire card content
+                bookCard.innerHTML = generateFullBookCardHtml(book);
+                return true;
+            }
+            return false;
+        }
+
+        // Function to generate HTML for the complete book card content
+        function generateFullBookCardHtml(book) {
+            return `
+                <div class="card-body d-flex flex-column" style="min-height: 200px;">
+                    <h6 class="card-title mb-3" style="overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${book.title.split(' ').slice(0, 10).join(' ') + (book.title.split(' ').length > 15 ? '...' : '')}</h6>
+                    <div class="row flex-fill">
+                        <div class="col-8 d-flex flex-column">
+                            <p class="card-text mb-0">
+                                <small class="text-muted">by ${book.author}</small><br>
+                                ${book.isbn ? `<small>ISBN: ${book.isbn}</small><br>` : ''}
+                                <small>Location: ${book.location || 'Not specified'}</small>
+                            </p>
+                            <div class="mt-auto">
+                                <span class="badge bg-${book.status === 'available' ? 'success' : book.status === 'borrowed' ? 'danger' : 'warning'}">
+                                    ${book.status}
+                                </span>
+                                <br>
+                                <small class="text-muted">${book.copies_available}/${book.copies_total} available</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            ${book.thumbnail_url ? `
+                                <img src="${book.thumbnail_url.replace('http:', 'https:')}" alt="${book.title}" 
+                                     class="img-fluid rounded h-100" 
+                                     style="width: 100%; object-fit: cover;" 
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <div class="d-none text-center p-2 bg-light rounded h-100 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-book fa-2x text-muted"></i>
+                                </div>
+                            ` : `
+                                <div class="text-center p-2 bg-light rounded h-100 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-book fa-2x text-muted"></i>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="generateQR(${book.id})" title="Generate QR Code">
+                            <i class="fas fa-qrcode"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="editBook(${book.id})" title="Edit Book">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBook(${book.id})" title="Delete Book">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
         function displayBooks(books) {
             const container = document.getElementById('booksContainer');
             
@@ -552,7 +620,7 @@
                 <div class="row">
                     ${books.map(book => `
                         <div class="col-lg-4 col-md-6 mb-4">
-                            <div class="card book-card h-100">
+                            <div class="card book-card h-100" data-book-id="${book.id}">
                                 <div class="card-body d-flex flex-column" style="min-height: 200px;">
                                     <h6 class="card-title mb-3" style="overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${book.title.split(' ').slice(0, 10).join(' ') + (book.title.split(' ').length > 15 ? '...' : '')}</h6>
                                     <div class="row flex-fill">
@@ -1128,8 +1196,20 @@
                     // Close modal
                     bootstrap.Modal.getInstance(document.getElementById('editBookModal')).hide();
                     
-                    // Reload books list while staying on the same page
-                    loadBooks(currentPage || 1, currentSearch, currentFilter);
+                    // Update the specific book card and the books array
+                    const updatedBook = { ...bookData, id: bookId };
+                    const cardUpdated = updateBookCard(updatedBook);
+                    
+                    // Update the book in the currentBooks array
+                    const bookIndex = currentBooks.findIndex(book => book.id.toString() === bookId);
+                    if (bookIndex !== -1) {
+                        currentBooks[bookIndex] = updatedBook;
+                    }
+                    
+                    // Only reload all books if we couldn't find the specific card
+                    if (!cardUpdated) {
+                        loadBooks(currentPage, currentSearch, currentFilter);
+                    }
                 } else {
                     showError('Error updating book: ' + result.message);
                 }
