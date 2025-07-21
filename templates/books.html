@@ -71,15 +71,24 @@
                         <!-- Book Form Section -->
                         <div class="col-md-6">
                             <form id="addBookForm">
-                                <div class="mb-2">
-                                    <label for="isbn" class="form-label">ISBN</label>
-                                    <input type="text" class="form-control form-control-sm" id="isbn" name="isbn" placeholder="Enter ISBN or will be filled from scan">
-                                    <small class="form-text text-muted">Can be automatically filled when you scan an ISBN</small>
-                                </div>
-                                
-                                <div class="mb-2">
-                                    <label for="title" class="form-label">Title *</label>
-                                    <input type="text" class="form-control form-control-sm" id="title" name="title" required>
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <div class="mb-2">
+                                            <label for="isbn" class="form-label">ISBN</label>
+                                            <input type="text" class="form-control form-control-sm" id="isbn" name="isbn" placeholder="Enter ISBN or will be filled from scan">
+                                            <small class="form-text text-muted">Can be automatically filled when you scan an ISBN</small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="title" class="form-label">Title *</label>
+                                            <input type="text" class="form-control form-control-sm" id="title" name="title" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Cover Preview</label>
+                                        <div class="text-center border rounded p-2" style="height: 160px;">
+                                            <img id="coverPreview" src="/static/img/logo.svg" class="img-fluid h-100" alt="Book Cover">
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="row">
@@ -231,17 +240,27 @@
                                         <h6><i class="fas fa-book me-2"></i>Basic Information</h6>
                                     </div>
                                     <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="editIsbn" class="form-label">ISBN</label>
-                                            <input type="text" class="form-control form-control-sm" id="editIsbn" name="isbn" readonly>
-                                            <small class="form-text text-muted">ISBN cannot be changed</small>
+                                        <div class="row">
+                                            <div class="col-md-9">
+                                                <div class="mb-3">
+                                                    <label for="editIsbn" class="form-label">ISBN</label>
+                                                    <input type="text" class="form-control form-control-sm" id="editIsbn" name="isbn" readonly>
+                                                    <small class="form-text text-muted">ISBN cannot be changed</small>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="editTitle" class="form-label">Title *</label>
+                                                    <input type="text" class="form-control form-control-sm" id="editTitle" name="title" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Cover Preview</label>
+                                                <div class="text-center border rounded p-2" style="height: 160px;">
+                                                    <img id="editCoverPreview" src="/static/img/logo.svg" class="img-fluid h-100" alt="Book Cover">
+                                                </div>
+                                            </div>
                                         </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="editTitle" class="form-label">Title *</label>
-                                            <input type="text" class="form-control form-control-sm" id="editTitle" name="title" required>
-                                        </div>
-                                        
+
                                         <div class="row">
                                             <div class="col-6 mb-3">
                                                 <label for="editAuthor" class="form-label">Author *</label>
@@ -861,6 +880,8 @@
                     document.getElementById('editBookId').value = book.id;
                     document.getElementById('editThumbnailUrl').value = book.thumbnail_url || '';
                     document.getElementById('editIsbn').value = book.isbn || '';
+                    // Update cover preview
+                    document.getElementById('editCoverPreview').src = book.thumbnail_url || '/static/img/logo.svg';
                     document.getElementById('editTitle').value = book.title || '';
                     document.getElementById('editAuthor').value = book.author || '';
                     document.getElementById('editPublisher').value = book.publisher || '';
@@ -1046,8 +1067,12 @@
                     document.getElementById('editDescription').value = bookInfo.description || '';
                     
                     // Update thumbnail URL if available
-                    if (bookInfo.cover_url) {
-                        document.getElementById('editThumbnailUrl').value = bookInfo.cover_url;
+                    if (bookInfo.cover_url || bookInfo.thumbnail_url) {
+                        const thumbnailUrl = bookInfo.cover_url || bookInfo.thumbnail_url;
+                        document.getElementById('editThumbnailUrl').value = thumbnailUrl;
+                        document.getElementById('editCoverPreview').src = thumbnailUrl;
+                    } else {
+                        document.getElementById('editCoverPreview').src = '/static/img/logo.svg';
                     }
                     
                     // Handle categories (can be array or string)
@@ -1234,7 +1259,11 @@
                     
                     // Set thumbnail URL if available
                     if (bookInfo.cover_url || bookInfo.thumbnail_url) {
-                        document.getElementById('thumbnail_url').value = bookInfo.cover_url || bookInfo.thumbnail_url;
+                        const thumbnailUrl = bookInfo.cover_url || bookInfo.thumbnail_url;
+                        document.getElementById('thumbnail_url').value = thumbnailUrl;
+                        document.getElementById('coverPreview').src = thumbnailUrl;
+                    } else {
+                        document.getElementById('coverPreview').src = '/static/img/logo.svg';
                     }
                     
                     // Handle categories (can be array or string)
