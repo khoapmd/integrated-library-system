@@ -21,29 +21,6 @@
                         <small class="text-muted">Scanner for book QR codes and barcodes</small>
                     </div>
                     <div class="card-body">
-                        <!-- Scanner Preview -->
-                        <div class="scanner-preview mb-3" id="unifiedScannerPreview">
-                            <div class="text-center text-muted">
-                                <i class="fas fa-qrcode fa-3x"></i>
-                                <p class="mt-2">Book Scanner</p>
-                                <small>Scan book QR codes and ISBN barcodes</small>
-                            </div>
-                        </div>
-                        
-                        <!-- Scanner Controls -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <button id="bookScannerBtn" class="btn btn-danger w-100">
-                                    <i class="fas fa-qrcode me-2"></i>Scan Book QR/Barcode
-                                </button>
-                            </div>
-                            <div class="col-md-6">
-                                <button class="btn btn-outline-secondary w-100" onclick="manualEntry()">
-                                    <i class="fas fa-keyboard me-2"></i>Manual Book Entry
-                                </button>
-                            </div>
-                        </div>
-                        
                         <!-- Operation Type Selection -->
                         <div class="row mb-3">
                             <div class="col-md-12">
@@ -62,19 +39,63 @@
                             </div>
                         </div>
                         
-                        <!-- Member Selection (for checkout) -->
-                        <div id="memberSelection" class="mb-3">
-                            <label for="memberCodeInput" class="form-label">Member Code/ID:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="memberCodeInput" placeholder="Enter member ID or employee code" onkeyup="handleMemberCodeInput(event)">
-                                <button class="btn btn-outline-primary" type="button" onclick="lookupMemberCode()">
-                                    <i class="fas fa-search me-1"></i>Lookup
-                                </button>
+                        <!-- Workflow Guidance -->
+                        <div id="workflowGuidance" class="mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-list-ol me-2"></i>Step-by-Step Guide
+                                    </h6>
+                                    <ol class="mb-0">
+                                        <li id="step1" class="text-success">
+                                            <i class="fas fa-check me-1"></i>Operation type selected: Check Out
+                                        </li>
+                                        <li id="step2" class="fw-bold text-primary">
+                                            Second: Enter member information (required for checkout)
+                                        </li>
+                                        <li id="step3" class="text-muted">
+                                            Third: Scan or enter book information (waiting for member)
+                                        </li>
+                                    </ol>
+                                </div>
                             </div>
-                            <small class="form-text text-muted">Enter member ID or employee code and press Enter or click Lookup</small>
-                            
-                            <div id="selectedMemberInfo" class="mt-2" style="display: none;">
-                                <!-- This will be populated by JavaScript with comprehensive member details -->
+                        </div>
+                        
+                        <!-- Member Selection -->
+                        <div id="memberSelection" class="mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user me-2"></i>Member Information
+                                        <small class="text-muted ms-2">(Required for checkout)</small>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Manual Member Input -->
+                                    <div class="mb-3">
+                                        <label for="memberCodeInput" class="form-label">
+                                            <i class="fas fa-search me-1"></i>Enter Member Code or ID:
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="memberCodeInput" 
+                                                   placeholder="Enter member ID, employee code, or email"
+                                                   onkeypress="handleMemberCodeInput(event)">
+                                            <button class="btn btn-primary" type="button" onclick="lookupMemberCode()">
+                                                <i class="fas fa-search me-1"></i>Lookup
+                                            </button>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            You can enter: Member ID, Employee Code, Employee Number, or Email Address
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Selected Member Info -->
+                                    <div id="selectedMemberInfo" style="display: none;">
+                                        <!-- Member info will be displayed here -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -125,6 +146,42 @@
                                     </div>
                                 </div>
                                 <small class="form-text text-muted">Leave blank for no fee, or enter custom amount</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Scanner Section -->
+                        <div id="scannerSection" class="mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-qrcode me-2"></i>Book Scanner
+                                        <small class="text-muted ms-2">Scan QR codes and ISBN barcodes</small>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Scanner Preview -->
+                                    <div class="scanner-preview mb-3" id="unifiedScannerPreview">
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-qrcode fa-3x"></i>
+                                            <p class="mt-2">Book Scanner</p>
+                                            <small>Scan book QR codes and ISBN barcodes</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Scanner Controls -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-2 mb-md-0">
+                                            <button id="bookScannerBtn" class="btn btn-secondary w-100" disabled>
+                                                <i class="fas fa-qrcode me-2"></i>Scan Book QR/Barcode
+                                            </button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button id="manualEntryBtn" class="btn btn-secondary w-100" disabled>
+                                                <i class="fas fa-keyboard me-2"></i>Manual Book Entry
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -421,11 +478,11 @@
                 selectedMemberInfo.innerHTML = `
                     <div class="alert alert-success">
                         <div class="row">
-                            <div class="col-md-8">
+                            <div class="col-12">
                                 <h6 class="mb-3">
                                     <i class="fas fa-user-check me-2"></i>
                                     <strong>Member Selected</strong>
-                                    <span class="badge bg-success ms-2">
+                                    <span class="badge bg-success ms-2 d-none d-md-inline">
                                         <i class="fas fa-search me-1"></i>Manual Lookup
                                     </span>
                                 </h6>
@@ -441,72 +498,59 @@
                                     
                                     ${member.employee_number ? `<p class="mb-2"><strong><i class="fas fa-hashtag me-2"></i>Employee Number:</strong> ${member.employee_number}</p>` : ''}
                                     
-                                    ${member.email ? `<p class="mb-2"><strong><i class="fas fa-envelope me-2"></i>Email:</strong> <a href="mailto:${member.email}" class="text-decoration-none">${member.email}</a></p>` : ''}
-                                    
-                                    ${member.phone ? `<p class="mb-2"><strong><i class="fas fa-phone me-2"></i>Phone:</strong> <a href="tel:${member.phone}" class="text-decoration-none">${member.phone}</a></p>` : ''}
-                                    
                                     ${member.department ? `<p class="mb-2"><strong><i class="fas fa-building me-2"></i>Department:</strong> ${member.department}</p>` : ''}
                                     
                                     ${member.position ? `<p class="mb-2"><strong><i class="fas fa-briefcase me-2"></i>Position:</strong> ${member.position}</p>` : ''}
                                 </div>
                                 
-                                ${member.address ? `
-                                    <div class="mt-2">
-                                        <p class="mb-2"><strong><i class="fas fa-map-marker-alt me-2"></i>Address:</strong><br>
-                                        ${member.address}${member.city ? `, ${member.city}` : ''}${member.state ? `, ${member.state}` : ''}${member.zip_code ? ` ${member.zip_code}` : ''}</p>
-                                    </div>
-                                ` : ''}
-                                
                                 ${member.member_type || member.membership_type ? `
                                     <div class="mt-2">
-                                        <span class="badge bg-info me-2">
+                                        <span class="badge bg-info me-2 d-none">
                                             <i class="fas fa-tag me-1"></i>${member.member_type || member.membership_type}
                                         </span>
                                 ` : ''}
                                 ${member.status ? `
-                                        <span class="badge ${member.status === 'active' ? 'bg-success' : member.status === 'inactive' ? 'bg-warning' : 'bg-secondary'} me-2">
+                                        <span class="badge ${member.status === 'active' ? 'bg-success' : member.status === 'inactive' ? 'bg-warning' : 'bg-secondary'} me-2 d-none">
                                             <i class="fas fa-circle me-1"></i>${member.status.charAt(0).toUpperCase() + member.status.slice(1)}
                                         </span>
                                 ` : ''}
                                 ${member.join_date || member.membership_date ? `
-                                        <span class="badge bg-light text-dark me-2">
+                                        <span class="badge bg-light text-dark me-2 d-none">
                                             <i class="fas fa-calendar me-1"></i>Joined: ${new Date(member.join_date || member.membership_date).toLocaleDateString()}
                                         </span>
                                 ` : ''}
                                 ${member.max_books ? `
-                                        <span class="badge bg-secondary me-2">
+                                        <span class="badge bg-secondary me-2 d-none">
                                             <i class="fas fa-book me-1"></i>Max Books: ${member.max_books}
                                         </span>
                                 ` : ''}
                                 ${member.member_type || member.membership_type || member.status || member.join_date || member.membership_date || member.max_books ? '</div>' : ''}
                                 
-                                ${member.notes ? `
-                                    <div class="mt-3">
-                                        <p class="mb-1"><strong><i class="fas fa-sticky-note me-2"></i>Notes:</strong></p>
-                                        <div class="bg-light p-2 rounded">
-                                            <small>${member.notes}</small>
-                                        </div>
+                                <!-- Action Buttons -->
+                                <div class="mt-3">
+                                    <div class="d-grid gap-2 d-md-flex">
+                                        <button class="btn btn-sm btn-outline-secondary w-100 w-md-auto me-md-2" onclick="clearSelectedMember()">
+                                            <i class="fas fa-times me-1"></i> Clear Selection
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info w-100 w-md-auto me-md-2" onclick="viewMemberHistory('${member.id}')">
+                                            <i class="fas fa-history me-1"></i> View History
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-primary w-100 w-md-auto" onclick="editMember('${member.id}')">
+                                            <i class="fas fa-edit me-1"></i> Edit Member
+                                        </button>
                                     </div>
-                                ` : ''}
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <button class="btn btn-sm btn-outline-secondary mb-2" onclick="clearSelectedMember()">
-                                    <i class="fas fa-times me-1"></i> Clear Selection
-                                </button>
-                                <br>
-                                <button class="btn btn-sm btn-outline-info mb-2" onclick="viewMemberHistory('${member.id}')">
-                                    <i class="fas fa-history me-1"></i> View History
-                                </button>
-                                <br>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editMember('${member.id}')">
-                                    <i class="fas fa-edit me-1"></i> Edit Member
-                                </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
                 selectedMemberInfo.style.display = 'block';
             }
+            
+            // Update workflow guidance and enable book controls
+            const operation = document.querySelector('input[name="operation"]:checked').value;
+            updateWorkflowGuidance(operation);
+            updateBookControlsState();
             
             console.log('✅ [MEMBER SELECT] Member selected:', member);
         }
@@ -519,6 +563,11 @@
             if (selectedMemberInfo) {
                 selectedMemberInfo.style.display = 'none';
             }
+            
+            // Update workflow guidance and disable book controls if checkout mode
+            const operation = document.querySelector('input[name="operation"]:checked').value;
+            updateWorkflowGuidance(operation);
+            updateBookControlsState();
             
             console.log('🗑️ [MEMBER CLEAR] Member selection cleared');
         }
@@ -666,6 +715,40 @@
                 radio.addEventListener('change', updateConditionNotesVisibility);
             });
             
+            // Setup scanner button click handler to check workflow requirements
+            document.getElementById('bookScannerBtn').addEventListener('click', function(e) {
+                const operation = document.querySelector('input[name="operation"]:checked').value;
+                
+                if (operation === 'checkout' && !selectedMember) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    safeToast('showWarning', 'Please select a member first before scanning for checkout.');
+                    // Focus on member input
+                    document.getElementById('memberCodeInput').focus();
+                    return false;
+                }
+                
+                // If requirements are met, allow the scanner to function normally
+                // The actual scanner functionality is handled by the UniversalScanner
+            });
+            
+            // Setup manual entry button click handler
+            document.getElementById('manualEntryBtn').addEventListener('click', function(e) {
+                const operation = document.querySelector('input[name="operation"]:checked').value;
+                
+                if (operation === 'checkout' && !selectedMember) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    safeToast('showWarning', 'Please select a member first before manual book entry for checkout.');
+                    // Focus on member input
+                    document.getElementById('memberCodeInput').focus();
+                    return false;
+                }
+                
+                // If requirements are met, call the manual entry function
+                manualEntry();
+            });
+            
             updateOperationMode();
         });
 
@@ -677,7 +760,7 @@
                 
                 if (data.success) {
                     members = data.members;
-                    updateMemberSelect();
+                    console.log('✅ [CIRCULATION] Members loaded:', members.length, 'members');
                 } else {
                     console.error('Failed to load members:', data.message);
                 }
@@ -686,120 +769,10 @@
             }
         }
 
-        // Update member select dropdown
+        // Note: Member dropdown functionality removed - using manual input only
         function updateMemberSelect() {
-            const select = document.getElementById('memberSelect');
-            if (!select) {
-                console.warn('⚠️ [CIRCULATION] memberSelect element not found, skipping dropdown update');
-                return;
-            }
-            
-            select.innerHTML = '<option value="">Select a member...</option>';
-            
-            members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = `${member.first_name} ${member.last_name} (${member.member_id})`;
-                select.appendChild(option);
-            });
-            
-            // Add change event listener to handle manual member selection
-            select.addEventListener('change', function() {
-                const selectedMemberInfo = document.getElementById('selectedMemberInfo');
-                if (this.value) {
-                    const selectedMember = members.find(m => m.id == this.value);
-                    if (selectedMember) {
-                        // Show full member info (matching scan/manual entry display)
-                        selectedMemberInfo.innerHTML = `
-                            <div class="alert alert-info">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <h6 class="mb-3">
-                                            <i class="fas fa-user-check me-2"></i>
-                                            <strong>Member Selected</strong>
-                                            <span class="badge bg-primary ms-2">
-                                                <i class="fas fa-hand-pointer me-1"></i>Manual Selection
-                                            </span>
-                                        </h6>
-                                        <div class="member-info-fields">
-                                            <p class="mb-2"><strong><i class="fas fa-user me-2"></i>Name:</strong><br>
-                                            ${selectedMember.first_name} ${selectedMember.last_name}</p>
-                                            
-                                            <p class="mb-2"><strong><i class="fas fa-id-card me-2"></i>Member ID:</strong><br>
-                                            ${selectedMember.member_id}</p>
-                                            
-                                            ${selectedMember.employee_code ? `<p class="mb-2"><strong><i class="fas fa-id-badge me-2"></i>Employee Code:</strong><br>${selectedMember.employee_code}</p>` : ''}
-                                            
-                                            ${selectedMember.employee_number ? `<p class="mb-2"><strong><i class="fas fa-hashtag me-2"></i>Employee Number:</strong><br>${selectedMember.employee_number}</p>` : ''}
-                                            
-                                            ${selectedMember.email ? `<p class="mb-2"><strong><i class="fas fa-envelope me-2"></i>Email:</strong><br><a href="mailto:${selectedMember.email}" class="text-decoration-none">${selectedMember.email}</a></p>` : ''}
-                                            
-                                            ${selectedMember.phone ? `<p class="mb-2"><strong><i class="fas fa-phone me-2"></i>Phone:</strong><br><a href="tel:${selectedMember.phone}" class="text-decoration-none">${selectedMember.phone}</a></p>` : ''}
-                                            
-                                            ${selectedMember.department ? `<p class="mb-2"><strong><i class="fas fa-building me-2"></i>Department:</strong><br>${selectedMember.department}</p>` : ''}
-                                            
-                                            ${selectedMember.position ? `<p class="mb-2"><strong><i class="fas fa-briefcase me-2"></i>Position:</strong><br>${selectedMember.position}</p>` : ''}
-                                        </div>
-                                        ${selectedMember.address ? `
-                                            <div class="mt-2">
-                                                <p class="mb-2"><strong><i class="fas fa-map-marker-alt me-2"></i>Address:</strong><br>
-                                                ${selectedMember.address}${selectedMember.city ? `, ${selectedMember.city}` : ''}${selectedMember.state ? `, ${selectedMember.state}` : ''}${selectedMember.zip_code ? ` ${selectedMember.zip_code}` : ''}</p>
-                                            </div>
-                                        ` : ''}
-                                        ${selectedMember.member_type || selectedMember.membership_type ? `
-                                            <div class="mt-2">
-                                                <span class="badge bg-info me-2">
-                                                    <i class="fas fa-tag me-1"></i>${selectedMember.member_type || selectedMember.membership_type}
-                                                </span>
-                                        ` : ''}
-                                        ${selectedMember.status ? `
-                                                <span class="badge ${selectedMember.status === 'active' ? 'bg-success' : selectedMember.status === 'inactive' ? 'bg-warning' : 'bg-secondary'} me-2">
-                                                    <i class="fas fa-circle me-1"></i>${selectedMember.status.charAt(0).toUpperCase() + selectedMember.status.slice(1)}
-                                                </span>
-                                        ` : ''}
-                                        ${selectedMember.join_date || selectedMember.membership_date ? `
-                                                <span class="badge bg-light text-dark me-2">
-                                                    <i class="fas fa-calendar me-1"></i>Joined: ${new Date(selectedMember.join_date || selectedMember.membership_date).toLocaleDateString()}
-                                                </span>
-                                        ` : ''}
-                                        ${selectedMember.max_books ? `
-                                                <span class="badge bg-secondary me-2">
-                                                    <i class="fas fa-book me-1"></i>Max Books: ${selectedMember.max_books}
-                                                </span>
-                                        ` : ''}
-                                        ${selectedMember.member_type || selectedMember.membership_type || selectedMember.status || selectedMember.join_date || selectedMember.membership_date || selectedMember.max_books ? '</div>' : ''}
-                                        
-                                        ${selectedMember.notes ? `
-                                            <div class="mt-3">
-                                                <p class="mb-1"><strong><i class="fas fa-sticky-note me-2"></i>Notes:</strong></p>
-                                                <div class="bg-light p-2 rounded">
-                                                    <small>${selectedMember.notes}</small>
-                                                </div>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <button class="btn btn-sm btn-outline-secondary mb-2" onclick="clearSelectedMember()">
-                                            <i class="fas fa-times me-1"></i> Clear Selection
-                                        </button>
-                                        <br>
-                                        <button class="btn btn-sm btn-outline-info mb-2" onclick="viewMemberHistory('${selectedMember.id}')">
-                                            <i class="fas fa-history me-1"></i> View History
-                                        </button>
-                                        <br>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="editMember('${selectedMember.id}')">
-                                            <i class="fas fa-edit me-1"></i> Edit Member
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        selectedMemberInfo.style.display = 'block';
-                    }
-                } else {
-                    selectedMemberInfo.style.display = 'none';
-                }
-            });
+            // No longer using dropdown - members are selected via manual input only
+            console.log('ℹ️ [CIRCULATION] Member dropdown functionality disabled');
         }
 
         // Update operation mode UI
@@ -808,9 +781,15 @@
             const memberSelection = document.getElementById('memberSelection');
             const bookConditionSelection = document.getElementById('bookConditionSelection');
             
+            // Update workflow guidance
+            updateWorkflowGuidance(operation);
+            
             if (operation === 'checkout') {
                 memberSelection.style.display = 'block';
                 bookConditionSelection.style.display = 'none';
+                
+                // Disable book controls until member is selected
+                updateBookControlsState();
             } else {
                 memberSelection.style.display = 'none';
                 bookConditionSelection.style.display = 'block';
@@ -821,6 +800,94 @@
                 // Reset condition to good when switching to check-in
                 document.getElementById('conditionGood').checked = true;
                 updateConditionNotesVisibility();
+                
+                // For check-in, enable book controls immediately (no member required)
+                enableBookControls();
+            }
+        }
+        
+        // Update workflow guidance based on operation and current state
+        function updateWorkflowGuidance(operation) {
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const step3 = document.getElementById('step3');
+            
+            // Step 1 is always completed after operation selection
+            step1.className = 'text-success';
+            step1.innerHTML = '<i class="fas fa-check me-1"></i>Operation type selected: ' + 
+                              (operation === 'checkout' ? 'Check Out' : 'Check In');
+            
+            if (operation === 'checkout') {
+                step2.innerHTML = 'Second: Enter member information (required for checkout)';
+                step2.className = selectedMember ? 'text-success' : 'fw-bold text-primary';
+                
+                if (selectedMember) {
+                    step2.innerHTML = '<i class="fas fa-check me-1"></i>Member selected: ' + 
+                                      selectedMember.first_name + ' ' + selectedMember.last_name;
+                    step3.className = 'fw-bold text-primary';
+                    step3.innerHTML = 'Third: Scan or enter book information';
+                } else {
+                    step3.className = 'text-muted';
+                    step3.innerHTML = 'Third: Scan or enter book information (waiting for member)';
+                }
+            } else {
+                step2.className = 'text-muted';
+                step2.innerHTML = 'Second: Enter member information (not required for check-in)';
+                step3.className = 'fw-bold text-primary';
+                step3.innerHTML = 'Third: Scan or enter book information';
+            }
+        }
+        
+        // Update book controls state based on workflow requirements
+        function updateBookControlsState() {
+            const operation = document.querySelector('input[name="operation"]:checked').value;
+            
+            if (operation === 'checkout') {
+                // For checkout, require member selection
+                if (selectedMember) {
+                    enableBookControls();
+                } else {
+                    disableBookControls();
+                }
+            } else {
+                // For check-in, no member required
+                enableBookControls();
+            }
+        }
+        
+        // Enable book scanning and manual entry controls
+        function enableBookControls() {
+            const scanBtn = document.getElementById('bookScannerBtn');
+            const manualBtn = document.getElementById('manualEntryBtn');
+            
+            if (scanBtn) {
+                scanBtn.disabled = false;
+                scanBtn.classList.remove('btn-secondary');
+                scanBtn.classList.add('btn-danger');
+            }
+            
+            if (manualBtn) {
+                manualBtn.disabled = false;
+                manualBtn.classList.remove('btn-secondary');
+                manualBtn.classList.add('btn-outline-secondary');
+            }
+        }
+        
+        // Disable book scanning and manual entry controls
+        function disableBookControls() {
+            const scanBtn = document.getElementById('bookScannerBtn');
+            const manualBtn = document.getElementById('manualEntryBtn');
+            
+            if (scanBtn) {
+                scanBtn.disabled = true;
+                scanBtn.classList.remove('btn-danger');
+                scanBtn.classList.add('btn-secondary');
+            }
+            
+            if (manualBtn) {
+                manualBtn.disabled = true;
+                manualBtn.classList.remove('btn-outline-secondary');
+                manualBtn.classList.add('btn-secondary');
             }
         }
 
@@ -951,12 +1018,9 @@
         async function processCirculation(bookUuid) {
             const operation = document.querySelector('input[name="operation"]:checked').value;
             
-            // Get member ID from dropdown if available, otherwise use selectedMember
+            // Get member ID from selectedMember (no dropdown anymore)
             let memberId = null;
-            const memberSelect = document.getElementById('memberSelect');
-            if (memberSelect) {
-                memberId = memberSelect.value;
-            } else if (selectedMember) {
+            if (selectedMember) {
                 memberId = selectedMember.id;
             }
             
@@ -1331,6 +1395,16 @@
         }
         // Manual entry
         function manualEntry() {
+            // Check workflow requirements before opening modal
+            const operation = document.querySelector('input[name="operation"]:checked').value;
+            
+            if (operation === 'checkout' && !selectedMember) {
+                safeToast('showWarning', 'Please select a member first before entering book information for checkout.');
+                // Focus on member input
+                document.getElementById('memberCodeInput').focus();
+                return;
+            }
+            
             const modal = new bootstrap.Modal(document.getElementById('manualEntryModal'));
             modal.show();
         }
