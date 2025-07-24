@@ -26,6 +26,10 @@ class Book(db.Model):
     added_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     last_updated = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Normalized search columns for Vietnamese accent-insensitive search
+    title_normalized = db.Column(db.String(255), nullable=True)
+    author_normalized = db.Column(db.String(255), nullable=True)
+    
     # Relationships
     transactions = db.relationship('Transaction', backref='book', lazy=True)
     
@@ -50,6 +54,16 @@ class Book(db.Model):
             'added_date': self.added_date.isoformat(),
             'last_updated': self.last_updated.isoformat()
         }
+    
+    def update_normalized_fields(self):
+        """Update normalized search fields for Vietnamese accent-insensitive search"""
+        from utils import normalize_vietnamese_text
+        
+        if self.title:
+            self.title_normalized = normalize_vietnamese_text(self.title)
+        
+        if self.author:
+            self.author_normalized = normalize_vietnamese_text(self.author)
 
 class Member(db.Model):
     __tablename__ = 'members'

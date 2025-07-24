@@ -3,7 +3,7 @@ from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 from sqlalchemy import func
 from models import db, Book, Member, Transaction
-from utils import QRCodeManager, ISBNScanner, generate_member_id, calculate_fine
+from utils import QRCodeManager, ISBNScanner, generate_member_id, calculate_fine, normalize_vietnamese_text, create_search_variants
 from config import config, Config
 import os
 import io
@@ -133,16 +133,50 @@ def get_books():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search = request.args.get('search', '')
+    search_type = request.args.get('search_type', 'basic')  # 'basic' or 'smart'
+    status = request.args.get('status', '')
     
     query = Book.query
     
+    # Apply status filter if provided
+    if status and status != 'all':
+        query = query.filter(Book.status == status)
+    
     if search:
-        search = search.lower()  # Convert search term to lowercase
-        query = query.filter(
-            (func.lower(Book.title).contains(search)) |
-            (func.lower(Book.author).contains(search)) |
-            (func.lower(Book.isbn).contains(search))
-        )
+        search = search.strip()
+        
+        if search_type == 'smart':
+            # Smart search with Vietnamese accent-insensitive support
+            search_variants = create_search_variants(search)
+            
+            # Create conditions for each search variant
+            search_conditions = []
+            for variant in search_variants:
+                variant_lower = variant.lower()
+                search_conditions.extend([
+                    # Search in original fields
+                    func.lower(Book.title).contains(variant_lower),
+                    func.lower(Book.author).contains(variant_lower),
+                    func.lower(Book.isbn).contains(variant_lower),
+                    func.lower(Book.categories).contains(variant_lower),
+                    func.lower(Book.description).contains(variant_lower),
+                    # Search in normalized fields (if they exist)
+                    func.lower(Book.title_normalized).contains(variant_lower),
+                    func.lower(Book.author_normalized).contains(variant_lower)
+                ])
+            
+            # Combine all conditions with OR
+            if search_conditions:
+                from sqlalchemy import or_
+                query = query.filter(or_(*search_conditions))
+        else:
+            # Basic search (original behavior)
+            search = search.lower()
+            query = query.filter(
+                (func.lower(Book.title).contains(search)) |
+                (func.lower(Book.author).contains(search)) |
+                (func.lower(Book.isbn).contains(search))
+            )
     
     books = query.paginate(
         page=page, per_page=per_page, error_out=False
@@ -206,6 +240,9 @@ def add_book():
                 copies_available=data.get('copies_available', 1)
             )
             
+            # Update normalized fields for Vietnamese search
+            book.update_normalized_fields()
+            
             db.session.add(book)
             db.session.commit()
             
@@ -238,6 +275,10 @@ def update_book(book_id):
         for key, value in data.items():
             if hasattr(book, key) and key != 'id':
                 setattr(book, key, value)
+        
+        # Update normalized fields for Vietnamese search if title or author changed
+        if 'title' in data or 'author' in data:
+            book.update_normalized_fields()
         
         book.last_updated = datetime.utcnow()
         db.session.commit()

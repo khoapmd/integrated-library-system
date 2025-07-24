@@ -14,6 +14,8 @@ import ssl
 import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import unicodedata
+import re
 
 class QRCodeManager:
     def __init__(self):
@@ -498,3 +500,80 @@ def calculate_fine(due_date, return_date, fine_per_day=1.0):
     
     days_overdue = (return_date - due_date).days
     return days_overdue * fine_per_day
+
+def normalize_vietnamese_text(text):
+    """
+    Normalize Vietnamese text by removing accents/diacritics while preserving the base characters.
+    This enables accent-insensitive search for Vietnamese text.
+    
+    Examples:
+    - "Lãnh đạo bằng câu hỏi" -> "lanh dao bang cau hoi"
+    - "Tôi yêu Việt Nam" -> "toi yeu viet nam"
+    """
+    if not text:
+        return ""
+    
+    # Convert to lowercase first
+    text = text.lower()
+    
+    # Vietnamese character mapping for better accuracy
+    vietnamese_map = {
+        # A variations
+        'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a',
+        'ầ': 'a', 'ấ': 'a', 'ậ': 'a', 'ẩ': 'a', 'ẫ': 'a',
+        'ằ': 'a', 'ắ': 'a', 'ặ': 'a', 'ẳ': 'a', 'ẵ': 'a',
+        
+        # E variations
+        'è': 'e', 'é': 'e', 'ẹ': 'e', 'ẻ': 'e', 'ẽ': 'e',
+        'ề': 'e', 'ế': 'e', 'ệ': 'e', 'ể': 'e', 'ễ': 'e',
+        
+        # I variations
+        'ì': 'i', 'í': 'i', 'ị': 'i', 'ỉ': 'i', 'ĩ': 'i',
+        
+        # O variations
+        'ò': 'o', 'ó': 'o', 'ọ': 'o', 'ỏ': 'o', 'õ': 'o',
+        'ồ': 'o', 'ố': 'o', 'ộ': 'o', 'ổ': 'o', 'ỗ': 'o',
+        'ờ': 'o', 'ớ': 'o', 'ợ': 'o', 'ở': 'o', 'ỡ': 'o',
+        
+        # U variations
+        'ù': 'u', 'ú': 'u', 'ụ': 'u', 'ủ': 'u', 'ũ': 'u',
+        'ừ': 'u', 'ứ': 'u', 'ự': 'u', 'ử': 'u', 'ữ': 'u',
+        
+        # Y variations
+        'ỳ': 'y', 'ý': 'y', 'ỵ': 'y', 'ỷ': 'y', 'ỹ': 'y',
+        
+        # D variations
+        'đ': 'd',
+    }
+    
+    # Apply character mapping
+    for vietnamese_char, base_char in vietnamese_map.items():
+        text = text.replace(vietnamese_char, base_char)
+    
+    # Also use Unicode normalization as fallback for any missed characters
+    # NFD decomposes characters into base + combining characters, then remove combining chars
+    normalized = unicodedata.normalize('NFD', text)
+    ascii_text = ''.join(char for char in normalized if not unicodedata.combining(char))
+    
+    return ascii_text.strip()
+
+def create_search_variants(search_term):
+    """
+    Create multiple search variants for comprehensive Vietnamese search.
+    Returns both original and normalized versions of the search term.
+    """
+    if not search_term:
+        return []
+    
+    variants = []
+    
+    # Original search term (lowercased)
+    original = search_term.lower().strip()
+    variants.append(original)
+    
+    # Normalized version (accent-removed)
+    normalized = normalize_vietnamese_text(search_term)
+    if normalized and normalized != original:
+        variants.append(normalized)
+    
+    return list(set(variants))  # Remove duplicates

@@ -763,11 +763,12 @@
                 const searchElement = document.getElementById('searchInput');
                 let searchValue = searchElement.value;
                 
-                // Basic input sanitization
-                searchValue = searchValue.replace(/[^\w\s-]/gi, '').trim();
+                // Basic input sanitization - preserve Unicode characters for Vietnamese and other languages
+                // Only remove potentially dangerous characters, keep Vietnamese diacritics
+                searchValue = searchValue.replace(/[<>\"'&]/g, '').trim();
                 
-                // Trim whitespace and convert to lowercase for case-insensitive search
-                currentSearch = searchValue.toLowerCase();
+                // Keep the original search value for international characters
+                currentSearch = searchValue;
                 
                 // Reset to first page when searching
                 currentPage = 1;
