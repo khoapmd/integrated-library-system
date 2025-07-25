@@ -1,19 +1,19 @@
-# Enhanced Local Scanning Implementation
+# Enhanced Scanning Implementation
 
 ## Overview
 
-This document describes the enhanced local scanning implementation inspired by the `khoapmd/open-library-system` repository. The implementation focuses on local-first ISBN barcode and QR code detection with comprehensive validation and normalization.
+This document describes the enhanced scanning implementation for the Library Management System. The implementation focuses on local-first QR code and ISBN barcode detection with comprehensive validation and browser compatibility.
 
 ## Key Features
 
 ### 1. Multi-Library Approach
 - **ISBNUtils**: Comprehensive ISBN validation, normalization, and extraction
 - **IDPatternUtils**: Universal ID pattern validation for various formats
-- **UniversalScanner**: Enhanced scanner with local-first detection
+- **UniversalScanner**: Enhanced scanner with local-first detection and browser compatibility
 
 ### 2. Local-First Detection Strategy
-1. **Primary**: QuaggaJS for reliable local barcode detection
-2. **Secondary**: BarcodeDetector API (Chrome/Edge) as fallback
+1. **Primary**: Native BarcodeDetector API (Chrome/Edge) for fast local detection
+2. **Secondary**: ZXing-js library for broader browser support and fallback
 3. **Tertiary**: Server-based detection only when local methods fail
 
 ### 3. Enhanced Validation

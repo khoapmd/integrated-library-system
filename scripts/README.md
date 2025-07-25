@@ -5,9 +5,13 @@ This directory contains deployment scripts, database migration tools, and utilit
 ## 📁 Directory Structure
 
 ### 🚀 Deployment Scripts
-- **`deploy.sh`** / **`deploy.bat`** - Simple deployment script for basic setup
-- **`deploy-cloudflare.sh`** / **`deploy-cloudflare.bat`** - Docker deployment with Cloudflare tunnel support
-- **`deploy-cloudflare-enhanced.sh`** / **`deploy-cloudflare-enhanced.bat`** - Enhanced deployment with upgrade capabilities and database migrations
+- **`deploy.sh`** / **`deploy.bat`** - Simple deployment script for basic setup and development
+- **`deploy-cloudflare-enhanced.sh`** / **`deploy-cloudflare-enhanced.bat`** - Production deployment with Cloudflare tunnel support, upgrade capabilities, and database migrations
+
+**🛡️ Safety Features:**
+- **Database Protection**: Automatically detects existing data and preserves it
+- **No Overwriting**: Production databases are never reinitialized or overwritten
+- **Additive Migrations**: Only adds new columns/tables, never removes existing data
 
 ### 🗄️ Database Scripts
 - **`init_db.py`** - Initialize SQLite database with sample data
@@ -27,12 +31,17 @@ This directory contains deployment scripts, database migration tools, and utilit
 
 ### Quick Start
 ```bash
-# Basic deployment
+# Development/Basic deployment
 ./scripts/deploy.sh
 
-# Cloudflare deployment with upgrades
+# Production deployment with Cloudflare tunnel (safe for existing databases)
+./scripts/deploy-cloudflare-enhanced.sh initial
+
+# Production upgrades with database migrations (preserves all existing data)
 ./scripts/deploy-cloudflare-enhanced.sh upgrade
 ```
+
+**🔒 Production Safety Note**: All deployment scripts include safety checks to prevent data loss. Existing production databases are automatically detected and preserved.
 
 ### Database Migrations
 ```bash
@@ -60,5 +69,6 @@ python scripts/generate_ssl_certs.py
 - `migrate_books_categories.py` (obsolete - schema already uses categories)
 - `migrate_books_genre_to_categories.py` (obsolete - schema already uses categories)
 - `migrate_members.py` (functionality covered by migrate_employee_code.py)
+- `deploy-cloudflare.sh` / `deploy-cloudflare.bat` (superseded by enhanced versions)
 
 **Kept essential scripts only** - All remaining scripts are actively used or referenced in documentation.

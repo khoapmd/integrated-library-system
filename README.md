@@ -58,7 +58,7 @@ chmod +x scripts/deploy.sh
 
 ### Enhanced Deployment Scripts
 
-#### Automated Deployment Script
+#### Enhanced Deployment Script
 For complete deployment with health checks and database migrations:
 ```bash
 # Make script executable
@@ -67,12 +67,18 @@ chmod +x scripts/deploy-cloudflare-enhanced.sh
 # Initial deployment (fresh install)
 ./scripts/deploy-cloudflare-enhanced.sh initial
 
-# Upgrade deployment (with migrations)
+# Upgrade deployment (with migrations) - SAFE: preserves existing data
 ./scripts/deploy-cloudflare-enhanced.sh upgrade
 
 # Standard deployment (restart services)
 ./scripts/deploy-cloudflare-enhanced.sh
 ```
+
+**🛡️ Database Safety Features:**
+- **Existing data protection**: Scripts check for existing data before initialization
+- **No data overwriting**: Production deployments preserve all existing books, members, and transactions
+- **Migration-only updates**: Upgrade deployments only add new columns/tables, never remove data
+- **Automatic backups**: Scripts include backup recommendations for production use
 
 #### Manual Cloud Deployment
 If you prefer to execute deployment steps manually on your cloud server:
@@ -98,8 +104,9 @@ chmod +x scripts/quick-fix-thumbnail-column.sh
 ```
 
 #### Deployment Script Features
+- **🛡️ Database Safety**: Automatic detection of existing data - never overwrites production databases
 - **Health Monitoring**: Pre and post-deployment health checks
-- **Database Migrations**: Automatic schema updates for new features
+- **Database Migrations**: Automatic schema updates for new features (additive only)
 - **Service Management**: Intelligent container restart and cleanup
 - **Error Handling**: Comprehensive error detection and recovery
 - **Rollback Support**: Safe deployment with rollback capabilities
@@ -115,9 +122,11 @@ chmod +x scripts/quick-fix-thumbnail-column.sh
 #### Regular Updates (GitHub Pull)
 1. **Pull Changes**: `git pull origin main` to get latest code
 2. **Run Upgrade**: Execute `./scripts/deploy-cloudflare-enhanced.sh upgrade`
-3. **Database Migration**: Script automatically handles schema changes
+3. **Database Migration**: Script automatically handles schema changes (safe, additive only)
 4. **Service Restart**: Clean restart of all Docker services
 5. **Health Check**: Verify deployment success
+
+**🔒 Production Safety**: The upgrade process NEVER overwrites existing data. It only adds new database columns or tables as needed for new features.
 
 #### Emergency Fixes
 For critical database schema issues (like missing columns):
@@ -128,9 +137,9 @@ For critical database schema issues (like missing columns):
 
 ### Standard Deployment
 ```bash
-# Use the basic deployment script
-chmod +x scripts/deploy-cloudflare.sh
-./scripts/deploy-cloudflare.sh
+# Use the enhanced deployment script for production
+chmod +x scripts/deploy-cloudflare-enhanced.sh
+./scripts/deploy-cloudflare-enhanced.sh initial
 ```
 
 ### Docker Compose Services

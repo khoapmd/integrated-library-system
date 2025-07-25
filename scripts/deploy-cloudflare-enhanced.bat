@@ -57,9 +57,19 @@ if not errorlevel 1 (
     exit /b 1
 )
 
-REM Function to initialize database
+REM Function to initialize database (only if empty)
 :initialize_database
-echo 📋 Initializing database with sample data...
+echo 📋 Checking if database needs initialization...
+
+REM Check if database already has data
+docker compose exec -T library-app python -c "import sys, os; sys.path.insert(0, '.'); from app import app, db; from models import Book; exec('with app.app_context():\n if Book.query.first():\n  print(\"HAS_DATA\")\n else:\n  print(\"EMPTY\")')" | findstr "HAS_DATA" >nul
+if not errorlevel 1 (
+    echo 📚 Database already contains data. Skipping initialization.
+    echo    Your existing data is safe and preserved!
+    goto :eof
+)
+
+echo 📋 Database is empty. Initializing with sample data...
 docker compose exec -T library-app python scripts/init_postgres.py
 if not errorlevel 1 (
     echo ✅ Database initialized successfully!

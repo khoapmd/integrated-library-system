@@ -57,9 +57,28 @@ run_migrations() {
     fi
 }
 
-# Function to initialize database with sample data
+# Function to initialize database with sample data (only if empty)
 initialize_database() {
-    echo "📋 Initializing database with sample data..."
+    echo "📋 Checking if database needs initialization..."
+    
+    # Check if database already has data
+    if docker compose exec -T library-app python -c "
+import sys, os
+sys.path.insert(0, '.')
+from app import app, db
+from models import Book
+with app.app_context():
+    if Book.query.first():
+        print('HAS_DATA')
+    else:
+        print('EMPTY')
+" | grep -q "HAS_DATA"; then
+        echo "📚 Database already contains data. Skipping initialization."
+        echo "   Your existing data is safe and preserved!"
+        return 0
+    fi
+    
+    echo "📋 Database is empty. Initializing with sample data..."
     if docker compose exec -T library-app python scripts/init_postgres.py; then
         echo "✅ Database initialized successfully!"
         return 0
