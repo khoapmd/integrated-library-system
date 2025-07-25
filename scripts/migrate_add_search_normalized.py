@@ -20,10 +20,11 @@ def add_normalized_columns():
     
     with app.app_context():
         try:
-            # Check if columns already exist using newer SQLAlchemy syntax
+            # Check if columns already exist using database-agnostic approach
             with db.engine.connect() as conn:
-                result = conn.execute(text("PRAGMA table_info(books)"))
-                columns = [row[1] for row in result]
+                # Use database-agnostic method to check columns
+                inspector = db.inspect(db.engine)
+                columns = [col['name'] for col in inspector.get_columns('books')]
                 
                 if 'title_normalized' not in columns:
                     print("Adding title_normalized column...")
