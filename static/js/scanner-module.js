@@ -13,16 +13,8 @@
  * CACHE BUSTER: 20250707-104500
  */
 
-// Immediately log that this is the correct FULL-API version
-console.log('🚀 [MODULE LOADED] UniversalScanner v2.0.3-FULL-API loaded');
-console.log('✅ [API ENABLED] This module makes API calls for book lookup');
-console.log('📅 [CACHE CHECK] Cache buster: 20250707-104500');
-
 class UniversalScanner {
     constructor(options = {}) {
-        console.log('🔧 [API SCANNER] Initializing scanner module with API support');
-        console.log('✅ [API ENABLED] This scanner makes API calls for book lookup');
-        
         // Configuration options
         this.options = {
             scanInterval: options.scanInterval || 3000, // 3 seconds default
@@ -46,6 +38,15 @@ class UniversalScanner {
 
         // DOM elements (will be set when initializing)
         this.elements = {};
+    }
+
+    /**
+     * Helper method to show warnings
+     */
+    showWarning(message) {
+        if (window.showWarning) {
+            window.showWarning(message);
+        }
     }
 
     /**
@@ -154,7 +155,6 @@ class UniversalScanner {
             this.callbacks.onScanStart();
 
         } catch (error) {
-            console.error('Error accessing camera:', error);
             this.callbacks.onError('Unable to access camera. Please ensure camera permissions are granted.');
         }
     }
@@ -273,8 +273,6 @@ class UniversalScanner {
         if (this.isScanning) return;
 
         this.isScanning = true;
-        
-        console.log('🔍 [LOCAL SCANNER] Starting local-only scan - NO SERVER CALLS');
 
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
@@ -283,12 +281,9 @@ class UniversalScanner {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
 
-        console.log('🔍 [LOCAL SCANNER] Captured frame for scanning:', canvas.width, 'x', canvas.height);
-
         // Scan directly from canvas - no need to convert to blob/file
         try {
             // Scan locally for both QR and barcodes - NO SERVER CALLS
-            console.log('🔍 [LOCAL SCANNER] Scanning for QR and ISBN locally...');
             const [qrResults, barcodeResults] = await Promise.allSettled([
                 this.scanImageForQRLocal(canvas),
                 this.scanImageForBarcodeLocal(canvas)
@@ -299,7 +294,6 @@ class UniversalScanner {
 
             // Process QR results
             if (qrResults.status === 'fulfilled' && qrResults.value.success) {
-                console.log('✅ [LOCAL QR] QR detection successful');
                 // Check for books first
                 if (qrResults.value.books && qrResults.value.books.length > 0) {
                     results.push({
@@ -318,15 +312,11 @@ class UniversalScanner {
                 } 
                 else if (qrResults.value.rawData) {
                     // QR detected but no book/member info - only show if it's meaningful data
-                    console.log('📱 [LOCAL QR] QR Code detected but no book/member info:', qrResults.value.rawData);
                 }
-            } else {
-                console.log('❌ [LOCAL QR] QR detection failed or no QR found');
             }
 
             // Process barcode results (ISBN)
             if (barcodeResults.status === 'fulfilled' && barcodeResults.value.success) {
-                console.log('✅ [LOCAL ISBN] ISBN detection successful');
                 if (barcodeResults.value.books && barcodeResults.value.books.length > 0) {
                     results.push({
                         type: 'ISBN Barcode',
@@ -335,7 +325,6 @@ class UniversalScanner {
                     foundResults = true;
                 } else if (barcodeResults.value.isbn) {
                     // Just detected ISBN, fetch book info (LOCAL ONLY)
-                    console.log('📚 [LOCAL ISBN] ISBN detected, creating local book info:', barcodeResults.value.isbn);
                     const bookInfo = await this.fetchBookInfoByISBN(barcodeResults.value.isbn);
                     if (bookInfo) {
                         results.push({
@@ -345,13 +334,10 @@ class UniversalScanner {
                         foundResults = true;
                     }
                 }
-            } else {
-                console.log('❌ [LOCAL ISBN] ISBN detection failed or no ISBN found');
             }
 
             // Handle results
             if (foundResults) {
-                console.log('🎉 [LOCAL RESULTS] Found results, triggering callback (NO SERVER CALLS):', results);
                 this.callbacks.onResults(results, true);
                 
                 if (this.options.autoStop) {
@@ -359,7 +345,6 @@ class UniversalScanner {
                     this.showCodeFoundMessage();
                 }
             } else {
-                console.log('🔍 [LOCAL SCANNER] No meaningful results found in this scan');
                 // Only show "no results" message every 10th scan to avoid spam
                 if (!this.scanCount) this.scanCount = 0;
                 this.scanCount++;
@@ -387,7 +372,7 @@ class UniversalScanner {
             }
 
         } catch (error) {
-            console.error('Error scanning live video:', error);
+            // Error scanning live video
         } finally {
             this.isScanning = false;
         }
@@ -483,7 +468,6 @@ class UniversalScanner {
             });
 
         } catch (error) {
-            console.error('Error scanning image:', error);
             if (!isAutomatic) {
                 this.callbacks.onError('Error scanning image for codes');
             }
@@ -508,7 +492,6 @@ class UniversalScanner {
                     
                     if (barcodes.length > 0) {
                         const qrData = barcodes[0].rawValue;
-                        console.log('QR Code detected locally:', qrData);
                         
                         // Parse QR code data to extract book information
                         try {
@@ -526,7 +509,6 @@ class UniversalScanner {
                             }
                         } catch (e) {
                             // If not JSON, treat as plain text
-                            console.log('QR Code contains non-JSON text:', qrData);
                         }
                         
                         return {
@@ -539,16 +521,12 @@ class UniversalScanner {
                         return { success: false };
                     }
                 } catch (detectorError) {
-                    console.log('ℹ️ [QR] BarcodeDetector failed (trying ZXing fallback):', detectorError);
                     return { success: false };
                 }
             } else {
-                console.log('ℹ️ [QR] BarcodeDetector not available (normal), using ZXing fallback...');
-                
                 // Try ZXing-js as fallback for QR codes
                 if (typeof ZXing !== 'undefined' && ZXing.BrowserMultiFormatReader) {
                     try {
-                        console.log('🔍 [ZXING-QR] Attempting ZXing QR detection...');
                         const codeReader = new ZXing.BrowserMultiFormatReader();
                         
                         // Convert canvas to image for ZXing
@@ -570,7 +548,6 @@ class UniversalScanner {
                         
                         if (zxingResult && zxingResult.text) {
                             const qrData = zxingResult.text;
-                            console.log('✅ [ZXING-QR] QR Code detected:', qrData);
                             
                             // Parse QR code data to extract book or member information
                             try {
@@ -597,7 +574,6 @@ class UniversalScanner {
                                 }
                             } catch (e) {
                                 // If not JSON, treat as plain text and try member lookup
-                                console.log('QR Code contains non-JSON text, trying member lookup:', qrData);
                                 
                                 // Try to find member by employee code or member ID
                                 const memberInfo = await this.fetchMemberByCode(qrData);
@@ -615,22 +591,18 @@ class UniversalScanner {
                                 rawData: qrData
                             };
                         } else {
-                            console.log('❌ [ZXING-QR] No QR codes detected with ZXing');
                             return { success: false };
                         }
                         
                     } catch (zxingError) {
-                        console.log('❌ [ZXING-QR] ZXing QR detection failed:', zxingError.message);
                         return { success: false };
                     }
                 } else {
-                    console.log('⚠️ [ZXING-QR] ZXing library not available for QR fallback');
                     return { success: false };
                 }
             }
             
         } catch (error) {
-            console.error('Error scanning QR code locally:', error);
             return { success: false };
         }
     }
@@ -645,33 +617,22 @@ class UniversalScanner {
         try {
             // Use native BarcodeDetector API (Chrome/Edge) - prioritize this as it's more reliable
             if ('BarcodeDetector' in window) {
-                console.log('🔍 [DETECTOR] Using native BarcodeDetector for ISBN detection...');
                 try {
                     const barcodeDetector = new BarcodeDetector({ 
                         formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'code_93'] 
                     });
                     
-                    console.log('🔍 [DETECTOR] Scanning canvas:', canvas.width, 'x', canvas.height);
                     const barcodes = await barcodeDetector.detect(canvas);
-                    
-                    console.log('🔍 [DETECTOR] Detected', barcodes.length, 'barcode(s)');
                     
                     if (barcodes.length > 0) {
                         for (const barcode of barcodes) {
                             const rawValue = barcode.rawValue;
                             const format = barcode.format;
                             
-                            console.log('✅ [DETECTOR] Barcode found:', {
-                                value: rawValue,
-                                format: format,
-                                boundingBox: barcode.boundingBox
-                            });
-                            
                             // Use ISBNUtils for better validation
                             if (window.ISBNUtils && window.ISBNUtils.looksLikeIsbn(rawValue)) {
                                 const isbn = window.ISBNUtils.extractIsbn(rawValue);
                                 if (isbn) {
-                                    console.log('✅ [DETECTOR] Valid ISBN detected:', isbn);
                                     return {
                                         success: true,
                                         isbn: isbn,
@@ -683,33 +644,26 @@ class UniversalScanner {
                             // Fallback pattern validation
                             const cleanCode = rawValue.replace(/[^0-9X]/gi, '');
                             if (this.isValidISBNPattern(cleanCode)) {
-                                console.log('✅ [DETECTOR] ISBN pattern validated:', cleanCode);
                                 return {
                                     success: true,
                                     isbn: cleanCode,
                                     books: []
                                 };
                             }
-                            
-                            console.log('⚠️ [DETECTOR] Code detected but not valid ISBN:', rawValue);
                         }
                         
-                        console.log('⚠️ [DETECTOR] Found barcodes but none were valid ISBNs');
                     } else {
-                        console.log('❌ [DETECTOR] No barcodes detected in image');
+                        // No barcodes detected
                     }
                 } catch (detectorError) {
-                    console.log('❌ [DETECTOR] BarcodeDetector failed:', detectorError.message);
+                    // BarcodeDetector failed
                 }
             } else {
-                console.log('ℹ️ [DETECTOR] BarcodeDetector not available (this is normal in Chrome)');
-                console.log('💡 [DETECTOR] Using ZXing fallback for excellent scanning support');
+                // BarcodeDetector not available
             }
 
             // Try ZXing-js as fallback if available
             if (typeof ZXing !== 'undefined' && ZXing.BrowserMultiFormatReader) {
-                console.log('🔍 [ZXING] Trying ZXing-js fallback for ISBN detection...');
-                
                 try {
                     const codeReader = new ZXing.BrowserMultiFormatReader();
                     
@@ -732,12 +686,10 @@ class UniversalScanner {
                     
                     if (result && result.getText()) {
                         const detectedCode = result.getText();
-                        console.log('✅ [ZXING] ZXing detected code:', detectedCode);
                         
                         // Validate as ISBN
                         const validatedISBN = this.validateDetectedISBN(detectedCode);
                         if (validatedISBN) {
-                            console.log('✅ [ZXING] Valid ISBN confirmed:', validatedISBN);
                             return {
                                 success: true,
                                 isbn: validatedISBN,
@@ -746,51 +698,20 @@ class UniversalScanner {
                         }
                     }
                 } catch (zxingError) {
-                    console.log('❌ [ZXING] ZXing-js failed:', zxingError.message);
+                    // ZXing-js failed
                 }
             } else {
-                console.log('⚠️ [ZXING] ZXing-js library not available');
+                // ZXing-js library not available
             }
 
             // No local detection succeeded
-            console.log('❌ [LOCAL] No local barcode detection succeeded');
             return { success: false };
             
         } catch (error) {
-            console.error('❌ [ERROR] Error in local barcode scanning:', error);
             return { success: false };
         }
     }
 
-    /**
-     * Simple ZXing-js detection (fallback only)
-     */
-    async detectISBNWithZXingSimple(canvas) {
-        try {
-            console.log('🔍 [ZXING-SIMPLE] Attempting simple ZXing-js detection...');
-            
-            // Use the simplest possible ZXing API
-            const codeReader = new ZXing.BrowserMultiFormatReader();
-            
-            // Try the most basic decode method
-            const result = await codeReader.decodeOnce(canvas);
-            
-            if (result && result.getText()) {
-                const detectedCode = result.getText();
-                console.log('✅ [ZXING-SIMPLE] Detected:', detectedCode);
-                
-                return this.validateDetectedISBN(detectedCode);
-            }
-            
-            console.log('❌ [ZXING-SIMPLE] No code detected');
-            return null;
-            
-        } catch (error) {
-            console.log('❌ [ZXING-SIMPLE] Error:', error.message);
-            return null;
-        }
-    }
-    
     /**
      * Validate detected code as ISBN
      */
@@ -799,7 +720,6 @@ class UniversalScanner {
         if (window.ISBNUtils && window.ISBNUtils.looksLikeIsbn(detectedCode)) {
             const isbn = window.ISBNUtils.extractIsbn(detectedCode);
             if (isbn) {
-                console.log('✅ [ZXING] Valid ISBN confirmed:', isbn);
                 return isbn;
             }
         }
@@ -807,11 +727,9 @@ class UniversalScanner {
         // Fallback validation
         const cleanCode = detectedCode.replace(/[^0-9X]/gi, '');
         if (this.isValidISBNPattern(cleanCode)) {
-            console.log('✅ [ZXING] ISBN pattern validated:', cleanCode);
             return cleanCode;
         }
         
-        console.log('⚠️ [ZXING] Code detected but not valid ISBN:', detectedCode);
         return null;
     }
     
@@ -830,78 +748,29 @@ class UniversalScanner {
     }
 
     /**
-     * Preprocess image for better barcode detection
-     */
-    preprocessImageForBarcode(originalCanvas) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Set canvas size (optimize for barcode scanning)
-        canvas.width = originalCanvas.width;
-        canvas.height = originalCanvas.height;
-        
-        // Draw original image
-        ctx.drawImage(originalCanvas, 0, 0);
-        
-        // Get image data for processing
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        // Apply contrast enhancement and noise reduction
-        for (let i = 0; i < data.length; i += 4) {
-            // Convert to grayscale
-            const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-            
-            // Apply contrast enhancement
-            const contrast = 1.2; // Increase contrast
-            const enhanced = Math.max(0, Math.min(255, (gray - 128) * contrast + 128));
-            
-            // Apply threshold for better black/white separation
-            const threshold = enhanced > 128 ? 255 : 0;
-            
-            data[i] = threshold;     // Red
-            data[i + 1] = threshold; // Green
-            data[i + 2] = threshold; // Blue
-            // Alpha channel stays the same
-        }
-        
-        // Put processed data back
-        ctx.putImageData(imageData, 0, 0);
-        
-        console.log('Image preprocessed for barcode detection');
-        return canvas;
-    }
-
-    /**
      * Fetch book information by ISBN from backend API
      */
     async fetchBookInfoByISBN(isbn) {
-        console.log('📚 [API] Fetching book info for ISBN:', isbn);
-        
         try {
             // First try to find in local database
             const localResponse = await fetch(`/api/books/isbn/${isbn}`);
             if (localResponse.ok) {
                 const localData = await localResponse.json();
                 if (localData.success) {
-                    console.log('✅ [API] Found book in local database');
                     return localData.book;
                 }
             }
             
             // If not found locally, try external lookup
-            console.log('🔍 [API] Book not found locally, trying external lookup...');
             const externalResponse = await fetch(`/api/isbn/lookup/${isbn}`);
             if (externalResponse.ok) {
                 const externalData = await externalResponse.json();
                 if (externalData.success) {
-                    console.log('✅ [API] Found book info from external source');
                     return externalData.book_info;
                 }
             }
             
             // If still not found, create placeholder
-            console.log('⚠️ [API] No book info found, creating placeholder');
             return {
                 isbn: isbn,
                 title: `Book ${isbn}`,
@@ -913,7 +782,6 @@ class UniversalScanner {
             };
             
         } catch (error) {
-            console.error('❌ [API] Error fetching book info:', error);
             // Return placeholder on error
             return {
                 isbn: isbn,
@@ -931,20 +799,16 @@ class UniversalScanner {
      * Fetch book information by UUID from backend API
      */
     async fetchBookByUUID(uuid) {
-        console.log('📱 [API] Fetching book info for UUID:', uuid);
-        
         try {
             const response = await fetch(`/api/books/uuid/${uuid}`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    console.log('✅ [API] Found book by UUID');
                     return data.book;
                 }
             }
             
             // If not found, create placeholder
-            console.log('⚠️ [API] Book not found by UUID, creating placeholder');
             return {
                 uuid: uuid,
                 title: `QR Book ${uuid.substring(0, 8)}`,
@@ -956,7 +820,6 @@ class UniversalScanner {
             };
             
         } catch (error) {
-            console.error('❌ [API] Error fetching book by UUID:', error);
             // Return placeholder on error
             return {
                 uuid: uuid,
@@ -974,23 +837,18 @@ class UniversalScanner {
      * Fetch member information by employee code from backend API
      */
     async fetchMemberByEmployeeCode(employeeCode) {
-        console.log('👤 [API] Fetching member info for employee code:', employeeCode);
-        
         try {
             const response = await fetch(`/api/members/employee/${employeeCode}`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    console.log('✅ [API] Found member by employee code');
                     return data.member;
                 }
             }
             
-            console.log('⚠️ [API] Member not found by employee code');
             return null;
             
         } catch (error) {
-            console.error('❌ [API] Error fetching member by employee code:', error);
             return null;
         }
     }
@@ -999,8 +857,6 @@ class UniversalScanner {
      * Fetch member information by any code (employee code or member ID)
      */
     async fetchMemberByCode(code) {
-        console.log('👤 [API] Fetching member info for code:', code);
-        
         try {
             const response = await fetch('/api/scan/member-qr', {
                 method: 'POST',
@@ -1015,16 +871,13 @@ class UniversalScanner {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    console.log('✅ [API] Found member by code');
                     return data.member;
                 }
             }
             
-            console.log('⚠️ [API] Member not found by code');
             return null;
             
         } catch (error) {
-            console.error('❌ [API] Error fetching member by code:', error);
             return null;
         }
     }
@@ -1035,11 +888,12 @@ class UniversalScanner {
     showCodeFoundMessage() {
         const scanControls = document.querySelector('.scan-controls');
         if (scanControls) {
+            const scannerId = this.elements.preview.id + '_scanner';
             scanControls.innerHTML = `
                 <p class="scan-text" style="color: #28a745;">
                     <i class="fas fa-check-circle text-success me-2"></i>Code detected! Scanning stopped.
                 </p>
-                <button class="btn btn-success btn-sm" onclick="universalScanner.restartScanning()">
+                <button class="btn btn-success btn-sm" onclick="window.universalScanner?.restartScanning() || window.bookScanner?.restartScanning()">
                     <i class="fas fa-redo me-1"></i> Scan Another
                 </button>
             `;
@@ -1087,8 +941,6 @@ class UniversalScanner {
 
                 // Restart automatic scanning
                 this.startAutomaticScanning(video);
-                
-                console.log('📱 [SCANNER] Scanning restarted successfully');
             }
         }
     }
@@ -1215,11 +1067,9 @@ class UniversalScanner {
                     ${helpText}
                 </div>`;
         } else {
-            // Use toast notification if available, otherwise fall back to console
+            // Use toast notification if available
             if (window.showError) {
                 window.showError(message);
-            } else {
-                console.error(message);
             }
         }
     }
@@ -1228,14 +1078,14 @@ class UniversalScanner {
      * View book details (placeholder - should be overridden)
      */
     viewBookDetails(bookId) {
-        console.log('viewBookDetails should be implemented by the page using this module');
+        // Implementation should be overridden by the page using this module
     }
 
     /**
      * Show book details (placeholder - should be overridden)
      */
     showBookDetails(bookData) {
-        console.log('showBookDetails should be implemented by the page using this module');
+        // Implementation should be overridden by the page using this module
     }
 
     /**
@@ -1249,14 +1099,9 @@ class UniversalScanner {
         if (window.ISBNUtils) {
             const extractedIsbn = window.ISBNUtils.extractIsbn(isbn);
             if (extractedIsbn) {
-                console.log('Manual ISBN entry validated:', extractedIsbn);
                 return extractedIsbn;
             } else {
-                if (window.showWarning) {
-                    window.showWarning('Invalid ISBN format. Please check the number and try again.');
-                } else {
-                    console.error('Invalid ISBN format. Please check the number and try again.');
-                }
+                this.showWarning('Invalid ISBN format. Please check the number and try again.');
                 return null;
             }
         } else {
@@ -1265,11 +1110,7 @@ class UniversalScanner {
             if (cleanIsbn.length === 10 || cleanIsbn.length === 13) {
                 return cleanIsbn;
             } else {
-                if (window.showWarning) {
-                    window.showWarning('Invalid ISBN format. Please enter a valid ISBN-10 or ISBN-13.');
-                } else {
-                    console.error('Invalid ISBN format. Please enter a valid ISBN-10 or ISBN-13.');
-                }
+                this.showWarning('Invalid ISBN format. Please enter a valid ISBN-10 or ISBN-13.');
                 return null;
             }
         }
@@ -1286,11 +1127,7 @@ class UniversalScanner {
         if (uuid.length > 5 && uuid.trim()) {
             return uuid.trim();
         } else {
-            if (window.showWarning) {
-                window.showWarning('Invalid UUID format. Please enter a valid identifier.');
-            } else {
-                console.error('Invalid UUID format. Please enter a valid identifier.');
-            }
+            this.showWarning('Invalid UUID format. Please enter a valid identifier.');
             return null;
         }
     }
@@ -1307,15 +1144,9 @@ class UniversalScanner {
             const parsed = window.IDPatternUtils.parseId(input);
             
             if (!parsed.isValid) {
-                if (window.showWarning) {
-                    window.showWarning(`Invalid input format. Detected type: ${parsed.type}\nPlease enter a valid ISBN, QR code content, or UUID.`);
-                } else {
-                    console.error(`Invalid input format. Detected type: ${parsed.type}\nPlease enter a valid ISBN, QR code content, or UUID.`);
-                }
+                this.showWarning(`Invalid input format. Detected type: ${parsed.type}\nPlease enter a valid ISBN, QR code content, or UUID.`);
                 return;
             }
-            
-            console.log('Parsed ID:', parsed);
             
             // Handle based on detected type
             switch (parsed.type) {
@@ -1348,8 +1179,6 @@ class UniversalScanner {
                             type: 'QR Code (Manual)',
                             books: [qrBookInfo]
                         }], false);
-                    } else {
-                        this.callbacks.onError('Book not found with the provided UUID');
                     }
                     break;
                     
@@ -1361,8 +1190,6 @@ class UniversalScanner {
                             type: 'QR Code (Manual)',
                             books: [directQrBookInfo]
                         }], false);
-                    } else {
-                        this.callbacks.onError('Book not found with the provided QR code ID');
                     }
                     break;
                     
@@ -1411,16 +1238,10 @@ class UniversalScanner {
                         type: 'QR Code (Manual)',
                         books: [bookInfo]
                     }], false);
-                } else {
-                    this.callbacks.onError('Book not found with the provided UUID');
                 }
             }
         } else {
-            if (window.showWarning) {
-                window.showWarning('Please enter either "ISBN" or "UUID"');
-            } else {
-                console.error('Please enter either "ISBN" or "UUID"');
-            }
+            this.showWarning('Please enter either "ISBN" or "UUID"');
         }
     }
 

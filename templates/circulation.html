@@ -270,10 +270,6 @@
             const hasHtml = /<[^>]+>/.test(message);
             const options = hasHtml ? { allowHtml: true } : {};
             
-            if (hasHtml) {
-                console.log('🍞 [CIRCULATION] Toast message contains HTML, enabling allowHtml option');
-            }
-            
             // Try multiple ways to access the toast system
             if (window.toast && window.toast[type.replace('show', '').toLowerCase()]) {
                 // Use window.toast.success(), window.toast.error(), etc.
@@ -288,7 +284,6 @@
                 window.toast.show(message, toastType, options);
             } else {
                 // Final fallback to console and alert if toast system is not available
-                console.log(`Toast ${type}:`, message);
                 if (type === 'showError') {
                     alert('Error: ' + message.replace(/<[^>]*>/g, '')); // Strip HTML for alert
                 } else if (type === 'showWarning') {
@@ -316,14 +311,14 @@
                 statusDiv: 'circulationResults',
                 resultsDiv: 'circulationResults'
             });
-
-            console.log('📚 [CIRCULATION] Book scanner initialized');
+            
+            // Set global reference for scanner module callback
+            window.universalScanner = bookScanner;
+            window.bookScanner = bookScanner;
         }
 
         // Book scanner result handlers
-        function handleBookScanResults(results) {
-            console.log('📚 [BOOK SCAN] Processing book scan results:', results);
-            
+        function handleBookScanResults(results) {            
             if (results && results.length > 0) {
                 // Check for book QR codes
                 const qrResult = results.find(r => r.type === 'QR Code');
@@ -332,7 +327,6 @@
                     const book = qrResult.books[0];
                     
                     if (book.uuid) {
-                        console.log('✅ [BOOK SCAN] Processing book UUID:', book.uuid);
                         processCirculation(book.uuid);
                         return;
                     }
@@ -342,7 +336,6 @@
                 const barcodeResult = results.find(r => r.type === 'ISBN Barcode');
                 if (barcodeResult && barcodeResult.books && barcodeResult.books.length > 0) {
                     const book = barcodeResult.books[0];
-                    console.log('📖 [BOOK SCAN] Processing ISBN book:', book);
                     handleISBNBook(book);
                     return;
                 }
@@ -354,14 +347,12 @@
                             const jsonData = JSON.parse(result.rawData);
                             if (jsonData.uuid || jsonData.bookId || jsonData.book_id) {
                                 const bookUuid = jsonData.uuid || jsonData.bookId || jsonData.book_id;
-                                console.log('📚 [BOOK SCAN] Book UUID from JSON:', bookUuid);
                                 processCirculation(bookUuid);
                                 return;
                             }
                         } catch (e) {
                             // Check for UUID pattern in raw text
                             if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result.rawData.trim())) {
-                                console.log('📚 [BOOK SCAN] UUID pattern detected:', result.rawData);
                                 processCirculation(result.rawData.trim());
                                 return;
                             }
@@ -376,7 +367,6 @@
         }
 
         function handleBookScanError(message) {
-            console.error('🚨 [BOOK SCAN] Scanner error:', message);
             safeToast('showError', `Book Scanner Error: ${message}`);
         }
 
@@ -396,8 +386,6 @@
                 return;
             }
             
-            console.log('👤 [MEMBER LOOKUP] Looking up member code:', memberCode);
-            
             try {
                 // Try to find member by various identifiers
                 const member = findMemberByCode(memberCode);
@@ -410,7 +398,6 @@
                     await lookupMemberFromAPI(memberCode);
                 }
             } catch (error) {
-                console.error('❌ [MEMBER LOOKUP] Error:', error);
                 safeToast('showError', 'Error looking up member');
             }
         }
@@ -463,7 +450,6 @@
                 safeToast('showWarning', `Member with code "${memberCode}" not found in system. Please check the code or add the member first.`);
                 
             } catch (error) {
-                console.error('❌ [MEMBER API] Error:', error);
                 safeToast('showError', 'Error looking up member from server');
             }
         }
@@ -551,8 +537,6 @@
             const operation = document.querySelector('input[name="operation"]:checked').value;
             updateWorkflowGuidance(operation);
             updateBookControlsState();
-            
-            console.log('✅ [MEMBER SELECT] Member selected:', member);
         }
 
         function clearSelectedMember() {
@@ -568,8 +552,6 @@
             const operation = document.querySelector('input[name="operation"]:checked').value;
             updateWorkflowGuidance(operation);
             updateBookControlsState();
-            
-            console.log('🗑️ [MEMBER CLEAR] Member selection cleared');
         }
 
         function clearMemberSelection() {
@@ -577,7 +559,6 @@
         }
 
         function handleISBNBook(book) {
-            console.log('📖 [ISBN HANDLER] Processing ISBN book:', book);
             
             // Use the new ISBN processing function
             if (book.isbn) {
@@ -619,28 +600,12 @@
                     safeToast('showError', `Failed to add book: ${data.error}`);
                 }
             } catch (error) {
-                console.error('Error adding book to library:', error);
                 safeToast('showError', 'Error adding book to library');
             }
         }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 [CIRCULATION] Circulation page initialized');
-            
-            // Check browser capabilities
-            console.log('📋 [CIRCULATION] Browser capabilities:');
-            console.log('  - BarcodeDetector:', 'BarcodeDetector' in window);
-            console.log('  - ZXing library:', typeof ZXing !== 'undefined');
-            console.log('  - getUserMedia:', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
-            console.log('  - Secure context:', location.protocol === 'https:' || location.hostname === 'localhost');
-            console.log('  - Toast system:', !!window.toast);
-            console.log('  - Toast global functions:', {
-                showSuccess: typeof window.showSuccess,
-                showError: typeof window.showError,
-                showWarning: typeof window.showWarning
-            });
-            
             // Initialize unified scanner (fallback to basic scanner)
             async function initializeUnifiedScanner() {
                 try {
@@ -658,19 +623,15 @@
                             bookToggleBtn: 'bookScannerBtn',
                             modeIndicator: 'scannerModeIndicator'
                         });
-
-                        console.log('🎯 [CIRCULATION] Unified scanner initialized');
                         
-                        // Set global reference
+                        // Set global references
                         window.unifiedScanner = unifiedScanner;
-                        console.log('🌐 [CIRCULATION] Global unified scanner reference set');
+                        window.universalScanner = unifiedScanner;
                     } else {
-                        console.warn('⚠️ [CIRCULATION] UnifiedScannerManager not available, using fallback');
                         // Fallback to basic scanner initialization
                         initializeBookScanner();
                     }
                 } catch (error) {
-                    console.error('❌ [CIRCULATION] Failed to initialize unified scanner, using fallback:', error);
                     // Fallback to basic scanner initialization
                     initializeBookScanner();
                 }
@@ -678,26 +639,8 @@
             
             // Initialize the scanner
             initializeUnifiedScanner().catch(error => {
-                console.error('❌ [CIRCULATION] Failed to initialize unified scanner, using fallback:', error);
                 initializeBookScanner();
             });
-
-            // Check if toast system becomes available after a delay
-            setTimeout(() => {
-                console.log('🍞 [CIRCULATION] Toast system check after 1 second:');
-                console.log('  - window.toast:', !!window.toast);
-                console.log('  - window.showSuccess:', typeof window.showSuccess);
-                console.log('  - window.showError:', typeof window.showError);
-                console.log('  - window.showWarning:', typeof window.showWarning);
-                if (window.toast) {
-                    console.log('🍞 [CIRCULATION] Toast methods available:', {
-                        success: typeof window.toast.success,
-                        error: typeof window.toast.error,
-                        warning: typeof window.toast.warning,
-                        show: typeof window.toast.show
-                    });
-                }
-            }, 1000);
 
             // Load members
             loadMembers();
@@ -760,19 +703,15 @@
                 
                 if (data.success) {
                     members = data.members;
-                    console.log('✅ [CIRCULATION] Members loaded:', members.length, 'members');
-                } else {
-                    console.error('Failed to load members:', data.message);
                 }
             } catch (error) {
-                console.error('Error loading members:', error);
+                // Silently handle member loading errors
             }
         }
 
         // Note: Member dropdown functionality removed - using manual input only
         function updateMemberSelect() {
             // No longer using dropdown - members are selected via manual input only
-            console.log('ℹ️ [CIRCULATION] Member dropdown functionality disabled');
         }
 
         // Update operation mode UI
@@ -920,27 +859,19 @@
         }
 
         // Handle scan results
-        async function handleScanResults(results) {
-            console.log('🔍 [CIRCULATION] Scan results received:', results);
-            
+        async function handleScanResults(results) {            
             if (results && results.length > 0) {
-                console.log('📊 [CIRCULATION] Found', results.length, 'results');
-                
                 // Check for book QR codes first
                 const qrResult = results.find(r => r.type === 'QR Code');
-                console.log('🎯 [CIRCULATION] QR result:', qrResult);
                 
                 if (qrResult && qrResult.books && qrResult.books.length > 0) {
-                    console.log('📚 [CIRCULATION] Books found in QR:', qrResult.books);
                     const book = qrResult.books[0];
                     
                     // Check if this is a book UUID
                     if (book.uuid) {
-                        console.log('✅ [CIRCULATION] Processing book UUID:', book.uuid);
                         processCirculation(book.uuid);
                         return;
                     } else {
-                        console.error('❌ [CIRCULATION] Book has no UUID:', book);
                         safeToast('showError', 'QR code does not contain valid book UUID');
                         return;
                     }
@@ -948,15 +879,12 @@
                 
                 // Check for ISBN barcodes
                 const barcodeResult = results.find(r => r.type === 'ISBN Barcode');
-                console.log('📖 [CIRCULATION] Barcode result:', barcodeResult);
                 
                 if (barcodeResult && barcodeResult.books && barcodeResult.books.length > 0) {
-                    console.log('📖 [CIRCULATION] Books found in barcode:', barcodeResult.books);
                     const book = barcodeResult.books[0];
                     
                     // Process ISBN barcode - look up book by ISBN
                     if (book.isbn) {
-                        console.log('📖 [CIRCULATION] Processing ISBN:', book.isbn);
                         await processISBNForCirculation(book.isbn);
                         return;
                     }
@@ -967,17 +895,13 @@
                 
                 for (const result of results) {
                     if (result.rawData) {
-                        console.log('🔍 [CIRCULATION] Analyzing raw data:', result.rawData);
-                        
                         // Try to parse as JSON first
                         try {
                             const jsonData = JSON.parse(result.rawData);
-                            console.log('📄 [CIRCULATION] Parsed JSON data:', jsonData);
                             
                             // Check if it's book data
                             if (jsonData.uuid || jsonData.bookId || jsonData.book_id) {
                                 const bookUuid = jsonData.uuid || jsonData.bookId || jsonData.book_id;
-                                console.log('📚 [CIRCULATION] Book UUID extracted from JSON:', bookUuid);
                                 processCirculation(bookUuid);
                                 recognizedData = true;
                                 break;
@@ -985,7 +909,6 @@
                         } catch (e) {
                             // Not JSON, try using our comprehensive identifier processor
                             const rawData = result.rawData.trim();
-                            console.log('� [CIRCULATION] Using processBookIdentifier for raw data:', rawData);
                             
                             // Use the comprehensive identifier processor which handles UUIDs, ISBNs, etc.
                             await processBookIdentifier(rawData);
@@ -1010,7 +933,6 @@
 
         // Handle scan errors
         function handleScanError(message) {
-            console.error('🚨 [CIRCULATION] Scanner error:', message);
             safeToast('showError', `Scanner Error: ${message}`);
         }
 
@@ -1083,7 +1005,6 @@
                     statusDiv.innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
                 }
             } catch (error) {
-                console.error('Error getting book status:', error);
                 document.getElementById('currentStatus').innerHTML = 
                     '<div class="alert alert-danger">Error loading book status</div>';
             }
@@ -1123,7 +1044,6 @@
                     safeToast('showError', data.message);
                 }
             } catch (error) {
-                console.error('Checkout error:', error);
                 safeToast('showError', 'Error during checkout process');
             }
         }
@@ -1213,7 +1133,6 @@
                     safeToast('showError', data.message);
                 }
             } catch (error) {
-                console.error('Checkin error:', error);
                 safeToast('showError', 'Error during checkin process');
             }
         }
@@ -1221,20 +1140,16 @@
         // Load recent transactions
         async function loadRecentTransactions() {
             try {
-                console.log('📋 [CIRCULATION] Loading recent transactions...');
                 const response = await fetch('/api/circulation/recent?limit=5');
                 const data = await response.json();
                 
                 if (data.success) {
-                    console.log('📋 [CIRCULATION] Loaded', data.count, 'recent transactions');
                     updateRecentTransactionsDisplay(data.transactions);
                 } else {
-                    console.error('Failed to load recent transactions:', data.message);
                     document.getElementById('recentTransactions').innerHTML = 
                         '<div class="alert alert-warning">Failed to load recent transactions</div>';
                 }
             } catch (error) {
-                console.error('Error loading recent transactions:', error);
                 document.getElementById('recentTransactions').innerHTML = 
                     '<div class="alert alert-danger">Error loading recent transactions</div>';
             }
@@ -1427,15 +1342,12 @@
         }
         
         // Process book identifier (UUID, ISBN, or barcode)
-        async function processBookIdentifier(identifier) {
-            console.log('🔍 [IDENTIFIER] Processing book identifier:', identifier);
-            
+        async function processBookIdentifier(identifier) {            
             // Try to determine what type of identifier this is
             const trimmedId = identifier.trim();
             
             // Check if it's a UUID pattern
             if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedId)) {
-                console.log('📚 [IDENTIFIER] Recognized as UUID, processing circulation');
                 await processCirculation(trimmedId);
                 return;
             }
@@ -1444,7 +1356,6 @@
             if (typeof ISBNUtils !== 'undefined') {
                 const extractedIsbn = ISBNUtils.extractIsbn(trimmedId);
                 if (extractedIsbn) {
-                    console.log('📖 [IDENTIFIER] Recognized as ISBN:', extractedIsbn);
                     await processISBNForCirculation(extractedIsbn);
                     return;
                 }
@@ -1453,14 +1364,12 @@
             // Try simple ISBN pattern recognition as fallback
             const cleanedId = trimmedId.replace(/[-\s]/g, '');
             if (/^(978|979)?[0-9]{10,13}$/i.test(cleanedId)) {
-                console.log('📖 [IDENTIFIER] Looks like ISBN, attempting processing:', cleanedId);
                 await processISBNForCirculation(cleanedId);
                 return;
             }
             
             // If nothing else works, try as UUID anyway (in case it's a shortened UUID)
             if (/^[0-9a-f-]+$/i.test(trimmedId)) {
-                console.log('🎲 [IDENTIFIER] Trying as UUID anyway:', trimmedId);
                 await processCirculation(trimmedId);
                 return;
             }
@@ -1473,9 +1382,7 @@
         }
         
         // Process ISBN for circulation (lookup book by ISBN)
-        async function processISBNForCirculation(isbn) {
-            console.log('📖 [ISBN] Processing ISBN for circulation:', isbn);
-            
+        async function processISBNForCirculation(isbn) {            
             try {
                 // First try to find the book by ISBN in our library
                 const response = await fetch(`/api/books/isbn/${isbn}`);
@@ -1484,7 +1391,6 @@
                     const data = await response.json();
                     
                     if (data.success && data.book && data.book.uuid) {
-                        console.log('✅ [ISBN] Found book in library:', data.book.title);
                         safeToast('showInfo', `Found book: ${data.book.title}`);
                         
                         // Process circulation with the found book's UUID
@@ -1494,19 +1400,15 @@
                 }
                 
                 // If not found in our library, try to show book info and offer to add it
-                console.log('📖 [ISBN] Book not found in library, attempting to fetch book info...');
                 await handleISBNNotInLibrary(isbn);
                 
             } catch (error) {
-                console.error('❌ [ISBN] Error processing ISBN:', error);
                 safeToast('showError', `Error looking up ISBN: ${error.message}`);
             }
         }
         
         // Handle ISBN when book is not in library
-        async function handleISBNNotInLibrary(isbn) {
-            console.log('📖 [ISBN] Handling ISBN not in library:', isbn);
-            
+        async function handleISBNNotInLibrary(isbn) {            
             try {
                 // Try to get book information from external sources
                 const response = await fetch('/api/books/isbn-lookup', {
@@ -1534,7 +1436,6 @@
                 `);
                 
             } catch (error) {
-                console.error('❌ [ISBN] Error looking up book info:', error);
                 safeToast('showError', `
                     Book with ISBN ${isbn} not found in library.<br>
                     <small>Unable to retrieve book information. The book may need to be added manually.</small>
@@ -1570,18 +1471,15 @@
         
         // Missing unified scanner handler functions
         function handleUnifiedScanResults(results) {
-            console.log('🎯 [UNIFIED SCAN] Results received:', results);
             // For now, delegate to the main scan handler
             handleScanResults(results);
         }
         
         function handleUnifiedScanError(error) {
-            console.error('🚨 [UNIFIED SCAN] Error:', error);
             handleScanError(error);
         }
         
         function handleModeChange(mode) {
-            console.log('🔄 [UNIFIED SCAN] Mode changed to:', mode);
             const indicator = document.getElementById('scannerModeIndicator');
             if (indicator) {
                 indicator.innerHTML = '<i class="fas fa-qrcode me-2"></i>Book Scanner - Check In/Out';
@@ -1596,21 +1494,15 @@
         
         // Member action functions
         function viewMemberHistory(memberId) {
-            console.log('👤 [MEMBER] Viewing history for member ID:', memberId);
-            
             // Find the member name for better user experience
             const member = members.find(m => m.id == memberId);
             const memberName = member ? `${member.first_name} ${member.last_name}` : `Member #${memberId}`;
-            
-            console.log('👤 [MEMBER] Found member:', memberName);
             
             // Show the member history modal
             showMemberHistoryModal(memberId, memberName);
         }
         
         function editMember(memberId) {
-            console.log('👤 [MEMBER] Editing member ID:', memberId);
-            
             // You can implement this to open edit modal or navigate to edit page
             safeToast('showInfo', 'Opening member editor...');
             
@@ -1686,7 +1578,7 @@
                         data = await response.json();
                     }
                 } catch (e) {
-                    console.log('Member history endpoint not available, trying alternatives...');
+                    // Member history endpoint not available, trying alternatives
                 }
                 
                 // Second try: circulation transactions filtered by member
@@ -1697,7 +1589,7 @@
                             data = await response.json();
                         }
                     } catch (e) {
-                        console.log('Member transactions endpoint not available...');
+                        // Member transactions endpoint not available
                     }
                 }
                 
@@ -1728,7 +1620,7 @@
                             }
                         }
                     } catch (e) {
-                        console.log('Recent transactions endpoint also failed...');
+                        // Recent transactions endpoint also failed
                     }
                 }
                 
@@ -1784,7 +1676,6 @@
                     `;
                 }
             } catch (error) {
-                console.error('Error loading member history:', error);
                 content.innerHTML = `
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-triangle me-2"></i>

@@ -5,14 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Scanner Debug Test</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
-        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; }
-        .error { background: #ffe6e6; }
-        .success { background: #e6ffe6; }
-        #video { width: 100%; max-width: 400px; }
-        #canvas { border: 1px solid #000; }
-        button { margin: 5px; padding: 10px; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5; 
+        }
+        .debug-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px;
+        }
+        .error { background: #ffe6e6; color: #721c24; }
+        .success { background: #e6ffe6; color: #155724; }
+        #video { 
+            width: 100%; 
+            max-width: 400px; 
+            border-radius: 8px;
+        }
+        #canvas { 
+            border: 1px solid #ddd; 
+            border-radius: 4px;
+            background: white;
+        }
+        button { 
+            margin: 5px; 
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        h2 { color: #333; margin-top: 0; }
     </style>
 </head>
 <body>
@@ -52,28 +86,27 @@
 
         // Check browser capabilities
         function checkCapabilities() {
-            const results = [];
+            const capabilities = [
+                {
+                    check: navigator.mediaDevices && navigator.mediaDevices.getUserMedia,
+                    pass: '✅ getUserMedia supported',
+                    fail: '❌ getUserMedia not supported'
+                },
+                {
+                    check: 'BarcodeDetector' in window,
+                    pass: '✅ BarcodeDetector supported',
+                    fail: '❌ BarcodeDetector not supported'
+                },
+                {
+                    check: location.protocol === 'https:' || location.hostname === 'localhost',
+                    pass: '✅ Secure context (HTTPS or localhost)',
+                    fail: '❌ Not a secure context - camera may not work'
+                }
+            ];
             
-            // Check getUserMedia
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                results.push('<span class="success">✅ getUserMedia supported</span>');
-            } else {
-                results.push('<span class="error">❌ getUserMedia not supported</span>');
-            }
-            
-            // Check BarcodeDetector
-            if ('BarcodeDetector' in window) {
-                results.push('<span class="success">✅ BarcodeDetector supported</span>');
-            } else {
-                results.push('<span class="error">❌ BarcodeDetector not supported</span>');
-            }
-            
-            // Check if HTTPS
-            if (location.protocol === 'https:' || location.hostname === 'localhost') {
-                results.push('<span class="success">✅ Secure context (HTTPS or localhost)</span>');
-            } else {
-                results.push('<span class="error">❌ Not a secure context - camera may not work</span>');
-            }
+            const results = capabilities.map(cap => 
+                `<span class="${cap.check ? 'success' : 'error'}">${cap.check ? cap.pass : cap.fail}</span>`
+            );
             
             document.getElementById('capabilities').innerHTML = results.join('<br>');
         }
@@ -81,20 +114,20 @@
         // Start camera
         async function startCamera() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({
+                const constraints = {
                     video: {
                         facingMode: 'environment',
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
                     }
-                });
+                };
                 
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 document.getElementById('camera-status').innerHTML = 
                     '<span class="success">✅ Camera started successfully</span>';
                     
             } catch (error) {
-                console.error('Camera error:', error);
                 document.getElementById('camera-status').innerHTML = 
                     `<span class="error">❌ Camera error: ${error.message}</span>`;
             }
@@ -124,8 +157,7 @@
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0);
             
-            document.getElementById('qr-results').innerHTML = 
-                `<span>📸 Captured frame: ${canvas.width}x${canvas.height}</span><br>`;
+            const results = [`📸 Captured frame: ${canvas.width}x${canvas.height}`];
 
             // Test BarcodeDetector
             if ('BarcodeDetector' in window) {
@@ -134,70 +166,65 @@
                     const barcodes = await barcodeDetector.detect(canvas);
                     
                     if (barcodes.length > 0) {
-                        const results = barcodes.map(barcode => 
-                            `<div class="success">✅ QR Found: ${barcode.rawValue}</div>`
-                        ).join('');
-                        document.getElementById('qr-results').innerHTML += results;
-                        
-                        // Test if it's library book format
                         barcodes.forEach(barcode => {
+                            results.push(`<div class="success">✅ QR Found: ${barcode.rawValue}</div>`);
+                            
+                            // Test if it's library book format
                             try {
                                 const data = JSON.parse(barcode.rawValue);
                                 if (data.type === 'library_book') {
-                                    document.getElementById('qr-results').innerHTML += 
-                                        `<div class="success">📚 Library book detected: UUID ${data.uuid}</div>`;
+                                    results.push(`<div class="success">📚 Library book detected: UUID ${data.uuid}</div>`);
                                 }
                             } catch (e) {
-                                document.getElementById('qr-results').innerHTML += 
-                                    `<div>📄 Non-JSON QR code: ${barcode.rawValue}</div>`;
+                                results.push(`<div>📄 Non-JSON QR code: ${barcode.rawValue}</div>`);
                             }
                         });
                     } else {
-                        document.getElementById('qr-results').innerHTML += 
-                            '<span class="error">❌ No QR codes detected</span>';
+                        results.push('<span class="error">❌ No QR codes detected</span>');
                     }
                 } catch (error) {
-                    document.getElementById('qr-results').innerHTML += 
-                        `<span class="error">❌ BarcodeDetector error: ${error.message}</span>`;
+                    results.push(`<span class="error">❌ BarcodeDetector error: ${error.message}</span>`);
                 }
             } else {
-                document.getElementById('qr-results').innerHTML += 
-                    '<span class="error">❌ BarcodeDetector not available</span>';
+                results.push('<span class="error">❌ BarcodeDetector not available</span>');
             }
+            
+            document.getElementById('qr-results').innerHTML = results.join('<br>');
         }
 
         // Test API connection
         async function testAPI() {
             const results = [];
             
-            // Test 1: Basic API connection
             try {
+                // Test basic API connection
                 const response = await fetch('/api/books?per_page=1');
-                if (response.ok) {
-                    results.push('<span class="success">✅ API connection working</span>');
+                if (!response.ok) {
+                    results.push(`<span class="error">❌ API error: ${response.status}</span>`);
+                    document.getElementById('api-results').innerHTML = results.join('<br>');
+                    return;
+                }
+
+                results.push('<span class="success">✅ API connection working</span>');
+                
+                const data = await response.json();
+                if (data.books && data.books.length > 0) {
+                    const book = data.books[0];
+                    results.push(`<span class="success">📚 Sample book: ${book.title}</span>`);
                     
-                    const data = await response.json();
-                    if (data.books && data.books.length > 0) {
-                        const book = data.books[0];
-                        results.push(`<span class="success">📚 Sample book: ${book.title}</span>`);
-                        
-                        if (book.uuid) {
-                            // Test UUID lookup
-                            const uuidResponse = await fetch(`/api/books/uuid/${book.uuid}`);
-                            if (uuidResponse.ok) {
-                                const uuidData = await uuidResponse.json();
-                                if (uuidData.success) {
-                                    results.push('<span class="success">✅ UUID lookup working</span>');
-                                } else {
-                                    results.push('<span class="error">❌ UUID lookup failed</span>');
-                                }
-                            } else {
-                                results.push('<span class="error">❌ UUID endpoint not responding</span>');
-                            }
+                    // Test UUID lookup if available
+                    if (book.uuid) {
+                        const uuidResponse = await fetch(`/api/books/uuid/${book.uuid}`);
+                        if (uuidResponse.ok) {
+                            const uuidData = await uuidResponse.json();
+                            results.push(uuidData.success ? 
+                                '<span class="success">✅ UUID lookup working</span>' :
+                                '<span class="error">❌ UUID lookup failed</span>'
+                            );
+                        } else {
+                            results.push('<span class="error">❌ UUID endpoint not responding</span>');
                         }
                     }
-                } else {
-                    results.push(`<span class="error">❌ API error: ${response.status}</span>`);
                 }
             } catch (error) {
                 results.push(`<span class="error">❌ API connection failed: ${error.message}</span>`);

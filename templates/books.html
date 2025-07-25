@@ -648,53 +648,7 @@
                     ${books.map(book => `
                         <div class="col-lg-4 col-md-6 mb-4">
                             <div class="card book-card h-100" data-book-id="${book.id}">
-                                <div class="card-body d-flex flex-column" style="min-height: 200px;">
-                                    <h6 class="card-title mb-3" style="overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${book.title.split(' ').slice(0, 10).join(' ') + (book.title.split(' ').length > 15 ? '...' : '')}</h6>
-                                    <div class="row flex-fill">
-                                        <div class="col-8 d-flex flex-column">
-                                            <p class="card-text mb-0">
-                                                <small class="text-muted">by ${book.author}</small><br>
-                                                ${book.isbn ? `<small>ISBN: ${book.isbn}</small><br>` : ''}
-                                                <small>Location: ${book.location || 'Not specified'}</small>
-                                            </p>
-                                            <div class="mt-auto">
-                                                <span class="badge bg-${getStatusBadgeColor(book.status)}">
-                                                    ${book.status}
-                                                </span>
-                                                <br>
-                                                <small class="text-muted">${book.copies_available}/${book.copies_total} available</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
-                                            ${book.thumbnail_url ? `
-                                                <img src="${book.thumbnail_url.replace('http:', 'https:')}" alt="${book.title}" 
-                                                     class="img-fluid rounded h-100" 
-                                                     style="width: 100%; object-fit: cover;" 
-                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                <div class="d-none text-center p-2 bg-light rounded h-100 d-flex align-items-center justify-content-center">
-                                                    <i class="fas fa-book fa-2x text-muted"></i>
-                                                </div>
-                                            ` : `
-                                                <div class="text-center p-2 bg-light rounded h-100 d-flex align-items-center justify-content-center">
-                                                    <i class="fas fa-book fa-2x text-muted"></i>
-                                                </div>
-                                            `}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-footer bg-transparent">
-                                    <div class="btn-group w-100" role="group">
-                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="generateQR(${book.id})" title="Generate QR Code">
-                                            <i class="fas fa-qrcode"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="editBook(${book.id})" title="Edit Book">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBook(${book.id})" title="Delete Book">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
+                                ${generateFullBookCardHtml(book)}
                             </div>
                         </div>
                     `).join('')}
@@ -916,7 +870,7 @@
                 // Override the default result handler methods
                 modalScanner.viewBookDetails = function(bookId) {
                     // Navigate to book details or show modal
-                    console.log('View book details:', bookId);
+                    // Book details view implementation can be added here
                 };
 
                 modalScanner.showBookDetails = function(bookData) {
@@ -1061,11 +1015,7 @@
             // Get or create modal instance
             if (!editModalInstance) {
                 const modalEl = document.getElementById('editBookModal');
-                editModalInstance = new bootstrap.Modal(modalEl, {
-                    backdrop: true,
-                    keyboard: true,
-                    focus: true
-                });
+                editModalInstance = new bootstrap.Modal(modalEl);
             }
 
             // Load data first
@@ -1151,13 +1101,7 @@
             const formData = new FormData(form);
             const bookId = formData.get('id');
             
-            // Debug: Log all form data
-            console.log('Form data entries:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: "${value}"`);
-            }
-            
-            // Validate required fields with better error checking
+            // Validate required fields
             const requiredFields = [
                 { name: 'title', display: 'title' },
                 { name: 'author', display: 'author' },
@@ -1167,7 +1111,6 @@
             
             for (const field of requiredFields) {
                 const value = formData.get(field.name);
-                console.log(`Checking field ${field.name}: "${value}"`);
                 if (!value || value.trim() === '') {
                     showWarning(`Please fill in the ${field.display} field`);
                     return;
@@ -1177,8 +1120,6 @@
             // Validate copy counts
             const totalCopies = parseInt(formData.get('copies_total'));
             const availableCopies = parseInt(formData.get('copies_available'));
-            
-            console.log(`Total copies: ${totalCopies}, Available copies: ${availableCopies}`);
             
             if (isNaN(totalCopies) || totalCopies < 1) {
                 showValidationWarning('Total copies must be at least 1');
@@ -1204,8 +1145,6 @@
                     bookData[key] = value;
                 }
             });
-            
-            console.log('Book data to send:', bookData);
             
             try {
                 const response = await fetch(`/api/books/${bookId}`, {
@@ -1327,6 +1266,51 @@
             if (totalCopiesField && availableCopiesField) {
                 totalCopiesField.addEventListener('change', validateCopyCounts);
                 availableCopiesField.addEventListener('change', validateCopyCounts);
+            }
+            
+            // Get URL parameters and load initial data
+            const urlParams = new URLSearchParams(window.location.search);
+            const search = urlParams.get('search');
+            if (search) {
+                document.getElementById('searchInput').value = search;
+                currentSearch = search;
+            }
+            
+            loadBooks(currentPage, currentSearch, currentFilter);
+            
+            // Real-time ISBN validation
+            const isbnInput = document.getElementById('manualIsbnInput');
+            const processBtn = document.getElementById('processIsbnBtn');
+            const validationDiv = document.getElementById('isbnValidation');
+            
+            if (isbnInput && processBtn && validationDiv) {
+                isbnInput.addEventListener('input', function() {
+                    const isbn = this.value.trim();
+                    const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
+                    
+                    if (isbn === '') {
+                        validationDiv.innerHTML = '';
+                        processBtn.disabled = true;
+                        return;
+                    }
+                    
+                    if (cleanIsbn.length === 10 || cleanIsbn.length === 13) {
+                        validationDiv.innerHTML = 
+                            '<div class="alert alert-success alert-sm"><i class="fas fa-check-circle me-2"></i>Valid ISBN format</div>';
+                        processBtn.disabled = false;
+                    } else {
+                        validationDiv.innerHTML = 
+                            '<div class="alert alert-warning alert-sm"><i class="fas fa-exclamation-triangle me-2"></i>ISBN must be 10 or 13 digits</div>';
+                        processBtn.disabled = true;
+                    }
+                });
+                
+                // Handle Enter key for ISBN input
+                isbnInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !processBtn.disabled) {
+                        processManualIsbn();
+                    }
+                });
             }
         });
 
@@ -1475,19 +1459,6 @@
             }
         });
 
-        // Load books on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Get URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const search = urlParams.get('search');
-            if (search) {
-                document.getElementById('searchInput').value = search;
-                currentSearch = search;
-            }
-            
-            loadBooks(currentPage, currentSearch, currentFilter);
-        });
-
         // ISBN Scanner for Add Book Modal
         let isbnScanner = null;
 
@@ -1538,8 +1509,6 @@
 
         // Handle ISBN scan results
         async function handleIsbnScanResults(results) {
-            console.log('ISBN scan results:', results);
-            
             // Look for ISBN barcode results
             const isbnResult = results.find(r => r.type === 'ISBN Barcode');
             
@@ -1687,41 +1656,6 @@
             await fetchBookInfoFromISBN(cleanIsbn);
         }
 
-        // Real-time ISBN validation
-        document.addEventListener('DOMContentLoaded', function() {
-            const isbnInput = document.getElementById('manualIsbnInput');
-            const processBtn = document.getElementById('processIsbnBtn');
-            const validationDiv = document.getElementById('isbnValidation');
-            
-            isbnInput.addEventListener('input', function() {
-                const isbn = this.value.trim();
-                const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
-                
-                if (isbn === '') {
-                    validationDiv.innerHTML = '';
-                    processBtn.disabled = true;
-                    return;
-                }
-                
-                if (cleanIsbn.length === 10 || cleanIsbn.length === 13) {
-                    validationDiv.innerHTML = 
-                        '<div class="alert alert-success alert-sm"><i class="fas fa-check-circle me-2"></i>Valid ISBN format</div>';
-                    processBtn.disabled = false;
-                } else {
-                    validationDiv.innerHTML = 
-                        '<div class="alert alert-warning alert-sm"><i class="fas fa-exclamation-triangle me-2"></i>ISBN must be 10 or 13 digits</div>';
-                    processBtn.disabled = true;
-                }
-            });
-            
-            // Handle Enter key
-            isbnInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !processBtn.disabled) {
-                    processManualIsbn();
-                }
-            });
-        });
-
         // Clear form
         function clearForm() {
             document.getElementById('addBookForm').reset();
@@ -1738,24 +1672,17 @@
             const form = document.getElementById('addBookForm');
             const formData = new FormData(form);
             
-            // Debug: Log all form data
-            console.log('Form data entries:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: "${value}"`);
-            }
-            
             // Validate required fields
             const requiredFields = ['title', 'author'];
             for (const field of requiredFields) {
                 const value = formData.get(field);
-                console.log(`Checking field ${field}: "${value}"`);
                 if (!value || value.trim() === '') {
                     showWarning(`Please fill in the ${field.replace('_', ' ')} field`);
                     return;
                 }
             }
             
-            // Validate numeric fields - get values directly from elements as fallback
+            // Validate numeric fields
             let totalCopies = parseInt(formData.get('copies_total'));
             let availableCopies = parseInt(formData.get('copies_available'));
             
@@ -1766,8 +1693,6 @@
             if (isNaN(availableCopies)) {
                 availableCopies = parseInt(document.getElementById('copies_available').value) || 0;
             }
-            
-            console.log(`Total copies: ${totalCopies}, Available copies: ${availableCopies}`);
             
             if (totalCopies < 1) {
                 showWarning('Please enter a valid number for total copies (minimum 1)');

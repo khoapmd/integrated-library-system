@@ -71,8 +71,6 @@
 {% endblock %}
 
 {% block extra_js %}
-    <!-- ZXing-js temporarily disabled due to API compatibility issues -->
-    <!-- <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script> -->
     <script src="{{ url_for('static', filename='js/isbn-utils.js') }}?v=20250707-103000"></script>
     <script src="{{ url_for('static', filename='js/id-pattern-utils.js') }}?v=20250707-103000"></script>
     <script src="{{ url_for('static', filename='js/scanner-module.js') }}?v=20250707-103000"></script>
@@ -82,61 +80,6 @@
 
         // Initialize scanner on page load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Scanner page initialized with enhanced local ISBN detection');
-            
-            // Check IDPatternUtils availability
-            if (typeof IDPatternUtils !== 'undefined') {
-                console.log('✓ IDPatternUtils library is available for enhanced ID validation');
-                
-                // Test ID pattern validation
-                const testIds = [
-                    '9781234567890',
-                    '9783161484100',
-                    '878010000001',
-                    '12345678-1234-1234-1234-123456789012',
-                    '{"type":"library_book","uuid":"12345678-1234-1234-1234-123456789012"}'
-                ];
-                testIds.forEach(id => {
-                    const result = IDPatternUtils.parseId(id);
-                    console.log(`ID test: "${id}" -> Type: ${result.type}, Valid: ${result.isValid}`);
-                });
-            } else {
-                console.log('✗ IDPatternUtils library is NOT available');
-            }
-            
-            // Check ISBNUtils availability
-            if (typeof ISBNUtils !== 'undefined') {
-                console.log('✓ ISBNUtils library is available for enhanced validation');
-                
-                // Test ISBN validation
-                const testIsbns = ['9781234567890', '123456789X', '978-1-234-56789-0'];
-                testIsbns.forEach(isbn => {
-                    const result = ISBNUtils.extractIsbn(isbn);
-                    console.log(`ISBN test: "${isbn}" -> "${result}"`);
-                });
-            } else {
-                console.log('✗ ISBNUtils library is NOT available - using fallback validation');
-            }
-            
-            // Check BarcodeDetector API availability (our primary detection method)
-            if ('BarcodeDetector' in window) {
-                console.log('✓ BarcodeDetector API is available for local barcode detection');
-                
-                // Test supported formats
-                BarcodeDetector.getSupportedFormats().then(formats => {
-                    console.log('✓ Supported barcode formats:', formats);
-                }).catch(e => {
-                    console.log('⚠️ Could not get supported formats:', e);
-                });
-            } else {
-                console.log('❌ BarcodeDetector API is NOT available - limited detection capability');
-                console.log('💡 Consider using Chrome or Edge for better barcode detection');
-            }
-            
-            // Note: ZXing-js temporarily disabled due to API compatibility issues
-            console.log('⚠️ ZXing-js is temporarily disabled due to API compatibility issues');
-            console.log('💡 Using native BarcodeDetector API as primary detection method');
-            
             // Initialize the universal scanner
             universalScanner = new UniversalScanner({
                 scanInterval: 2000, // Faster scanning with local detection
@@ -159,17 +102,13 @@
             document.getElementById('fileUpload').addEventListener('change', function(event) {
                 const file = event.target.files[0];
                 if (file && file.type.startsWith('image/')) {
-                    console.log('File uploaded, scanning locally...');
                     universalScanner.scanImage(file, false);
                 }
             });
-
-            // Scanner is ready
         });
 
         // Handle scan results
         function handleScanResults(results, isAutomatic = false) {
-            console.log('Scan results:', results);
             if (results && results.length > 0) {
                 displayResults(results);
             } else if (!isAutomatic) {
@@ -180,7 +119,6 @@
 
         // Handle scan errors
         function handleScanError(message) {
-            console.error('Scan error:', message);
             document.getElementById('scanResults').innerHTML = 
                 `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${message}</div>`;
         }
@@ -298,13 +236,13 @@
 
         // Placeholder functions for book details
         function viewBookDetails(bookId) {
-            console.log('View book details:', bookId);
             // Navigate to book details or show modal
+            // Implementation can be added here
         }
 
         function showBookDetails(bookData) {
-            console.log('Show book details:', bookData);
             // Fill form with book data and show modal
+            // Implementation can be added here
         }
 
         // Toggle scanner function (for the bottom action bar)
